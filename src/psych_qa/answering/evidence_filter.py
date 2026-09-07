@@ -90,12 +90,16 @@ QUESTION_TYPE_CATEGORIES: dict[str, set[str]] = {
         "indication",
         "efficacy",
         "side_effects",
+        "side_effect_mechanism",
         "class",
         "mode_of_action",
         "target",
+        "neurotransmitter_effects",
+        "neurobiology",
         "therapeutics",
         "potential_advantages",
         "potential_disadvantages",
+        "classification",
     },
     "general": {
         # General questions get everything (fallback)

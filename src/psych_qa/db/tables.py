@@ -353,7 +353,9 @@ class AnswerTrace(Base):
     conversation_id: Mapped[int | None] = mapped_column(
         ForeignKey("conversations.id"), nullable=True
     )
+    turn_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     question: Mapped[str] = mapped_column(Text, nullable=False)
+    resolved_question: Mapped[str | None] = mapped_column(Text, nullable=True)
     question_understanding: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     evidence_package: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     answer: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
@@ -363,6 +365,10 @@ class AnswerTrace(Base):
     llm_latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=sqltext("now()"), nullable=False
+    )
+
+    __table_args__ = (
+        Index("ux_answer_traces_conv_turn", "conversation_id", "turn_number", unique=True),
     )
 
 
@@ -506,3 +512,28 @@ def init_db(drop_first: bool = False) -> None:
                     )
                 )
                 conn.commit()
+
+    # Add conversation columns to answer_traces (for existing databases)
+    if "answer_traces" in insp.get_table_names():
+        columns = [c["name"] for c in insp.get_columns("answer_traces")]
+        with engine.connect() as conn:
+            if "turn_number" not in columns:
+                conn.execute(
+                    sqltext("ALTER TABLE answer_traces ADD COLUMN turn_number INTEGER")
+                )
+            if "resolved_question" not in columns:
+                conn.execute(
+                    sqltext("ALTER TABLE answer_traces ADD COLUMN resolved_question TEXT")
+                )
+            # Unique index for (conversation_id, turn_number)
+            indexes = insp.get_indexes("answer_traces")
+            index_names = {idx["name"] for idx in indexes}
+            if "ux_answer_traces_conv_turn" not in index_names:
+                conn.execute(
+                    sqltext(
+                        "CREATE UNIQUE INDEX ux_answer_traces_conv_turn "
+                        "ON answer_traces (conversation_id, turn_number) "
+                        "WHERE conversation_id IS NOT NULL"
+                    )
+                )
+            conn.commit()

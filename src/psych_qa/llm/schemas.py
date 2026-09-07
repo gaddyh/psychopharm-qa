@@ -103,6 +103,87 @@ QUESTION_PARSE_SCHEMA: dict = {
 }
 
 
+# Schema for context-aware question parsing (follow-up resolution)
+CONTEXT_PARSE_SCHEMA: dict = {
+    "type": "object",
+    "properties": {
+        "resolved_question": {
+            "type": "string",
+            "description": (
+                "The question after resolving pronouns and implicit references using "
+                "conversation context. If the question is standalone, this equals "
+                "the raw question. If ambiguous, provide your best guess but set "
+                "context_status to 'ambiguous'."
+            ),
+        },
+        "context_status": {
+            "type": "string",
+            "enum": ["standalone", "resolved", "ambiguous", "missing_context"],
+            "description": (
+                "standalone: no context needed. "
+                "resolved: context successfully applied. "
+                "ambiguous: cannot resolve which entity is referenced. "
+                "missing_context: references prior context but none available."
+            ),
+        },
+        "is_follow_up": {
+            "type": "boolean",
+            "description": "True if the question references or builds on prior conversation turns.",
+        },
+        "clarification_question": {
+            "type": ["string", "null"],
+            "description": "If context_status is 'ambiguous', the targeted question to ask the user. Null otherwise.",
+        },
+        "drug_names": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Drug names after context resolution (inherited + newly mentioned).",
+        },
+        "question_type": {
+            "type": "string",
+            "enum": [
+                "mechanism",
+                "indication",
+                "dosing",
+                "side_effects",
+                "interactions",
+                "pharmacokinetics",
+                "special_populations",
+                "comparison",
+                "general",
+            ],
+            "description": "The type of question being asked, after resolution.",
+        },
+        "concepts": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Key medical concepts in the resolved question.",
+        },
+        "premises": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Factual premises stated in the question that should be verified against evidence.",
+        },
+        "is_patient_specific": {
+            "type": "boolean",
+            "description": "True if the question asks about a specific patient scenario.",
+        },
+    },
+    "required": [
+        "resolved_question",
+        "context_status",
+        "is_follow_up",
+        "clarification_question",
+        "drug_names",
+        "question_type",
+        "concepts",
+        "premises",
+        "is_patient_specific",
+    ],
+    "additionalProperties": False,
+}
+
+
 # Schema for claim-to-evidence entailment judging
 ENTAILMENT_SCHEMA: dict = {
     "type": "object",

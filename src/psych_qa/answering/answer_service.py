@@ -14,7 +14,7 @@ from typing import Any
 from ..llm.client import get_llm_client
 from ..llm.schemas import ANSWER_SCHEMA
 from ..repositories import conversations as conv_repo
-from ..retrieval.question_parser import parse_question
+from ..retrieval.question_parser import parse_question, parse_question_with_context
 from .citations import drop_unsupported_claims, validate_citations, validate_every_claim_has_evidence
 from .criticality import assign_critical
 from .evidence_builder import build_evidence_package
@@ -49,22 +49,106 @@ def _build_versions(evidence_package: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def answer_question(question: str, clinician_id: str | None = None) -> dict[str, Any]:
+def answer_question(
+    question: str,
+    clinician_id: str | None = None,
+    conversation_id: int | None = None,
+) -> dict[str, Any]:
     """Answer a psychopharmacology question with cited evidence.
 
+    If conversation_id is provided, loads recent context from the database
+    and resolves the question as a potential follow-up. Each turn retrieves
+    fresh evidence — previous answers are NOT passed into answer generation.
+
+    Args:
+        question: The question text (may be a follow-up with pronouns/references).
+        clinician_id: Optional clinician identifier.
+        conversation_id: Optional conversation ID for follow-up context.
+            If None, a new conversation is created.
+
     Returns:
-        Dict with: question, understanding, evidence_package, answer, trace_id,
-        llm_model, latency_ms, metrics, versions
+        Dict with: trace_id, question, resolved_question, understanding,
+        evidence_package, answer, conversation_id, turn_number,
+        llm_model, latency_ms, total_latency_ms, metrics, versions
     """
     t0 = time.time()
 
-    # 1. Parse question
-    logger.info(f"Parsing question: {question[:80]}...")
-    understanding = parse_question(question)
+    # 0. Determine conversation and load context
+    if conversation_id is None:
+        conversation_id = conv_repo.create_conversation(
+            title=question[:80], clinician_id=clinician_id
+        )
+        recent_context = []
+        turn_number = 1
+    else:
+        recent_context = conv_repo.get_recent_context(conversation_id, max_turns=3)
+        turn_number = conv_repo.get_next_turn_number(conversation_id)
 
-    # 2. Build evidence package
-    logger.info("Building evidence package...")
-    evidence_package_model, raw_data = build_evidence_package(question, understanding)
+    # 1. Parse question (with context if available)
+    logger.info(f"Parsing question (turn {turn_number}): {question[:80]}...")
+    understanding = parse_question_with_context(question, recent_context)
+
+    resolved_question = understanding.get("resolved_question", question)
+    context_status = understanding.get("context_status", "standalone")
+
+    # If ambiguous, return a clarification result without retrieval
+    if context_status == "ambiguous":
+        clarification = understanding.get("clarification_question")
+        logger.info(f"Ambiguous follow-up — asking for clarification: {clarification}")
+        answer = {
+            "claims": [],
+            "status": "needs_clarification",
+            "uncertainties": [],
+            "clarification_question": clarification,
+            "direct_answer": "",
+            "explanation": "",
+        }
+        total_latency_ms = int((time.time() - t0) * 1000)
+        versions = _build_versions({"drugs": {}})
+        metrics = compute_run_metrics(
+            question=question,
+            understanding=understanding,
+            evidence_package={"drugs": {}, "kaplan_passages": []},
+            answer=answer,
+            invalid_citation_ids=[],
+            llm_latency_ms=None,
+            total_latency_ms=total_latency_ms,
+            entailment_verdicts=None,
+            regeneration_attempts=0,
+            budget_diagnostics=None,
+        )
+        trace_id = conv_repo.save_answer_trace(
+            conversation_id=conversation_id,
+            question=question,
+            resolved_question=resolved_question,
+            question_understanding=understanding,
+            evidence_package={"drugs": {}, "kaplan_passages": []},
+            answer=answer,
+            llm_model=get_llm_client().chat_model,
+            llm_latency_ms=None,
+            metrics=metrics,
+            versions=versions,
+            turn_number=turn_number,
+        )
+        return {
+            "trace_id": trace_id,
+            "question": question,
+            "resolved_question": resolved_question,
+            "understanding": understanding,
+            "evidence_package": {"drugs": {}, "kaplan_passages": []},
+            "answer": answer,
+            "conversation_id": conversation_id,
+            "turn_number": turn_number,
+            "llm_model": get_llm_client().chat_model,
+            "latency_ms": None,
+            "total_latency_ms": total_latency_ms,
+            "metrics": metrics,
+            "versions": versions,
+        }
+
+    # 2. Build evidence package (using resolved question for retrieval)
+    logger.info(f"Building evidence package for: {resolved_question[:80]}...")
+    evidence_package_model, raw_data = build_evidence_package(resolved_question, understanding)
     evidence_package = evidence_package_model.model_dump()
 
     # 3. Check sufficiency
@@ -85,10 +169,10 @@ def answer_question(question: str, clinician_id: str | None = None) -> dict[str,
             "explanation": reason or "Insufficient evidence to answer this question.",
         }
     else:
-        # 4. Generate answer with LLM
+        # 4. Generate answer with LLM (using resolved question, no prior prose)
         logger.info("Generating answer with LLM...")
         evidence_text = build_evidence_prompt(evidence_package)
-        messages = build_answer_prompt(question, evidence_text)
+        messages = build_answer_prompt(resolved_question, evidence_text)
 
         client = get_llm_client()
         answer, prompt_tokens, completion_tokens, llm_latency_ms = client.chat_structured_timed(
@@ -162,7 +246,7 @@ def answer_question(question: str, clinician_id: str | None = None) -> dict[str,
     # 11. Compute metrics
     budget_diagnostics = raw_data.get("budget_diagnostics")
     metrics = compute_run_metrics(
-        question=question,
+        question=resolved_question,
         understanding=understanding,
         evidence_package=evidence_package,
         answer=answer,
@@ -176,10 +260,10 @@ def answer_question(question: str, clinician_id: str | None = None) -> dict[str,
 
     # 12. Save trace
     logger.info("Saving answer trace...")
-    conversation_id = conv_repo.create_conversation(title=question[:80], clinician_id=clinician_id)
     trace_id = conv_repo.save_answer_trace(
         conversation_id=conversation_id,
         question=question,
+        resolved_question=resolved_question,
         question_understanding=understanding,
         evidence_package=evidence_package,
         answer=answer,
@@ -187,14 +271,18 @@ def answer_question(question: str, clinician_id: str | None = None) -> dict[str,
         llm_latency_ms=llm_latency_ms,
         metrics=metrics,
         versions=versions,
+        turn_number=turn_number,
     )
 
     return {
         "trace_id": trace_id,
         "question": question,
+        "resolved_question": resolved_question,
         "understanding": understanding,
         "evidence_package": evidence_package,
         "answer": answer,
+        "conversation_id": conversation_id,
+        "turn_number": turn_number,
         "llm_model": get_llm_client().chat_model,
         "latency_ms": llm_latency_ms,
         "total_latency_ms": total_latency_ms,

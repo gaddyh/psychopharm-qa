@@ -71,7 +71,7 @@ def build_evidence_package(
 
     # Pack complete passages into the budget (no truncation)
     kaplan_selected, kaplan_omitted, budget_diagnostics = pack_kaplan(
-        kaplan_reranked, kaplan_budget, max_results=5
+        kaplan_reranked, kaplan_budget, max_results=8
     )
     logger.info(
         f"Kaplan packed: {len(kaplan_selected)} selected, {len(kaplan_omitted)} omitted "

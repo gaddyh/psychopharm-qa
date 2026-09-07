@@ -352,3 +352,137 @@ def test_get_recent_context_structure(monkeypatch):
     assert context[1]["resolved_question"] == "What are the side effects of amisulpride?"
     assert "amisulpride" in context[0]["drug_names"]
     assert "It blocks D2 receptors." in context[0]["answer_summary"]
+
+
+# ---------------------------------------------------------------------------
+# Test 9: False premise carried across turns (Case 12)
+# ---------------------------------------------------------------------------
+
+def test_false_premise_not_carried_across_turns():
+    """Turn 1: 'Amisulpride is a serotonin reuptake inhibitor, correct?'
+    Turn 2: 'So why does it increase serotonin?'
+
+    Turn 2 should resolve the drug (amisulpride) but NOT accept the false
+    premise that amisulpride increases serotonin. The resolved question
+    should not embed the false premise as fact.
+    """
+    from psych_qa.retrieval.question_parser import parse_question_with_context
+
+    recent_context = [
+        {
+            "question": "Amisulpride is a serotonin reuptake inhibitor, correct?",
+            "resolved_question": "Amisulpride is a serotonin reuptake inhibitor, correct?",
+            "understanding": {
+                "drug_names": ["amisulpride"],
+                "question_type": "mechanism",
+                "concepts": ["serotonin reuptake inhibitor"],
+                "premises": ["amisulpride is a serotonin reuptake inhibitor"],
+                "is_patient_specific": False,
+            },
+            "answer_summary": "No, amisulpride is not a serotonin reuptake inhibitor. It is a dopamine D2/D3 antagonist.",
+            "drug_names": ["amisulpride"],
+        }
+    ]
+
+    mock_result = {
+        "resolved_question": "Why does amisulpride increase serotonin?",
+        "context_status": "resolved",
+        "is_follow_up": True,
+        "clarification_question": None,
+        "drug_names": ["amisulpride"],
+        "question_type": "mechanism",
+        "concepts": ["serotonin"],
+        "premises": ["amisulpride increases serotonin"],
+        "is_patient_specific": False,
+    }
+
+    with patch("psych_qa.retrieval.question_parser.get_llm_client") as mock_client:
+        mock_client.return_value.chat_structured.return_value = (mock_result, 0, 0, 0)
+        result = parse_question_with_context(
+            "So why does it increase serotonin?",
+            recent_context,
+        )
+
+    # The drug should be resolved to amisulpride
+    assert result["context_status"] == "resolved"
+    assert "amisulpride" in result["drug_names"]
+    # The false premise should be flagged as a premise to verify, not accepted as fact
+    assert len(result.get("premises", [])) > 0
+    # The resolved question should contain the drug name (not just "it")
+    assert "amisulpride" in result["resolved_question"]
+
+
+# ---------------------------------------------------------------------------
+# Test 10: Prior-answer contamination (Case 13)
+# ---------------------------------------------------------------------------
+
+def test_prior_answer_contamination_not_repeated():
+    """Turn 1 stored a FAKE incorrect answer: 'Amisulpride is primarily a GABA-A agonist.'
+    Turn 2: 'What effects result from that mechanism?'
+
+    The system should:
+    1. Resolve the subject to amisulpride
+    2. Retrieve fresh mechanism evidence
+    3. NOT repeat the GABA-A claim
+
+    This test verifies that previous generated prose is not treated as evidence.
+    The answer prompt must not contain the fake previous answer.
+    """
+    from psych_qa.answering.prompts import build_answer_prompt
+
+    # The answer prompt should only contain the resolved question + evidence
+    # It must NOT contain any previous answer text
+    messages = build_answer_prompt(
+        "What effects result from the mechanism of amisulpride?",
+        "EVIDENCE: Amisulpride blocks D2 and D3 receptors.",
+    )
+
+    user_content = messages[1]["content"]
+    # The prompt should contain the resolved question and evidence
+    assert "amisulpride" in user_content.lower()
+    assert "D2" in user_content
+    # The prompt must NOT contain the fake GABA-A claim from the previous answer
+    assert "GABA" not in user_content
+    assert "GABA-A" not in user_content
+    assert "agonist" not in user_content.lower() or "partial agonist" in user_content.lower()
+    # No "Previous conversation" or "As discussed" section
+    assert "Previous conversation" not in user_content
+    assert "Previous answer" not in user_content
+    assert "As discussed" not in user_content
+
+
+def test_contamination_fake_answer_not_in_evidence_lookup():
+    """Verify that a fake previous answer text would not appear in any evidence
+    retrieved for the new turn. Evidence comes from the database, not from
+    previous answer prose."""
+    from psych_qa.answering.answer_service import build_evidence_lookup
+
+    # A real evidence package from the database
+    fake_evidence_package = {
+        "drugs": {
+            "amisulpride": {
+                "stahl_evidence": [
+                    {
+                        "evidence_id": "stahl_claim_123",
+                        "source": "stahl",
+                        "category": "mechanism",
+                        "text": "Blocks presynaptic dopamine 2 receptors at low doses",
+                        "page": 71,
+                    }
+                ],
+                "nbn_evidence": [],
+            }
+        },
+        "kaplan_passages": [],
+    }
+
+    lookup = build_evidence_lookup(fake_evidence_package)
+
+    # The lookup should contain the real evidence
+    assert "stahl_claim_123" in lookup
+    assert "D2" in lookup["stahl_claim_123"]["text"] or "dopamine" in lookup["stahl_claim_123"]["text"]
+
+    # The fake GABA-A claim should NOT be in the lookup
+    for eid, item in lookup.items():
+        assert "GABA" not in item.get("text", "")
+        assert "GABA-A" not in item.get("text", "")

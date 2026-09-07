@@ -76,6 +76,7 @@ class AbstentionCase(BaseModel):
     expected_status: ExpectedStatus  # abstained or needs_clarification
     reason: str = ""  # why the sources can't answer this
     reviewer_notes: str = ""
+    conversation_context: list[ConversationTurn] = Field(default_factory=list)
     review_status: ReviewStatus = ReviewStatus.NEEDS_SASSON_APPROVAL
     reviewed_by: str | None = None
     reviewed_at: datetime | None = None

@@ -46,6 +46,15 @@ class RequiredAnswerPoint(BaseModel):
     acceptable_evidence: list[AcceptableEvidence] = Field(default_factory=list)
 
 
+class ConversationTurn(BaseModel):
+    """A previous turn in a conversation (for multi-turn gold cases)."""
+    turn: int = 1
+    question: str
+    resolved_question: str | None = None
+    understanding: dict[str, Any] = Field(default_factory=dict)
+    answer_summary: str = ""
+
+
 class GoldCase(BaseModel):
     """A gold evaluation case with required/forbidden points."""
     question: str
@@ -53,6 +62,7 @@ class GoldCase(BaseModel):
     required_answer_points: list[RequiredAnswerPoint] = Field(default_factory=list)
     forbidden_claims: list[str] = Field(default_factory=list)
     acceptable_evidence: list[AcceptableEvidence] = Field(default_factory=list)
+    conversation_context: list[ConversationTurn] = Field(default_factory=list)
     reviewer_notes: str = ""
     review_status: ReviewStatus = ReviewStatus.NEEDS_SASSON_APPROVAL
     reviewed_by: str | None = None

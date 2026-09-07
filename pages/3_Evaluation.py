@@ -72,7 +72,7 @@ if _gr is not None:
             "Type": r["question_type"],
             "Recall@K": f"{r['recall_at_k']:.0%}",
             "Points": f"{r['required_points_covered']}/{r['required_points_total']}",
-            "Forb": r["forbidden_claims_count"],
+            "Forb": r.get("forbidden_claims_count", 0),
             "NbN": ev.get("nbn", 0),
             "Stahl": ev.get("stahl", 0),
             "Kaplan": ev.get("kaplan", 0),

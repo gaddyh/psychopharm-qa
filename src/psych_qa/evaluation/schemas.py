@@ -108,11 +108,52 @@ class TraceVersions(BaseModel):
     corpus_versions: dict[str, str] = Field(default_factory=dict)
 
 
-def parse_case(raw: dict[str, Any], dataset: str) -> GoldCase | AbstentionCase | RegressionCase:
+# ---------------------------------------------------------------------------
+# Hard challenge cases — designed to expose reasoning and trust boundary failures
+# ---------------------------------------------------------------------------
+
+class ExpectedOutcome(str, Enum):
+    """Expected outcome category for hard challenge cases."""
+    SUPPORTED_ANSWER = "supported_answer"
+    PARTIAL_ANSWER = "partial_answer"
+    CLARIFICATION_REQUIRED = "clarification_required"
+    CONFLICTING_EVIDENCE = "conflicting_evidence"
+    UNSUPPORTED_SPECIFICITY = "unsupported_specificity"
+    OUT_OF_CORPUS = "out_of_corpus"
+    CLINICAL_BOUNDARY = "clinical_boundary"
+
+
+class HardGoldCase(BaseModel):
+    """A challenging conversation case designed to expose where reasoning
+    and trust boundaries break.
+
+    Unlike regular gold cases, these are scored for required and forbidden
+    behaviors — not only retrieval recall. Performance is expected to fall
+    below 100%, which is healthy: the set should reveal the next real
+    engineering problems.
+    """
+    question: str
+    expected_status: ExpectedStatus = ExpectedStatus.ANSWERED
+    expected_outcome: ExpectedOutcome = ExpectedOutcome.PARTIAL_ANSWER
+    expected_resolution: str | None = None
+    conversation_context: list[ConversationTurn] = Field(default_factory=list)
+    required_behaviors: list[str] = Field(default_factory=list)
+    forbidden_behaviors: list[str] = Field(default_factory=list)
+    required_answer_points: list[RequiredAnswerPoint] = Field(default_factory=list)
+    reviewer_notes: str = ""
+    review_status: ReviewStatus = ReviewStatus.NEEDS_SASSON_APPROVAL
+    reviewed_by: str | None = None
+    reviewed_at: datetime | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+def parse_case(raw: dict[str, Any], dataset: str) -> GoldCase | AbstentionCase | RegressionCase | HardGoldCase:
     """Parse a raw JSONL dict into the appropriate case type."""
     if dataset.startswith("abstention"):
         return AbstentionCase(**raw)
     elif dataset == "regression":
         return RegressionCase(**raw)
+    elif dataset == "golden_hard":
+        return HardGoldCase(**raw)
     else:
         return GoldCase(**raw)

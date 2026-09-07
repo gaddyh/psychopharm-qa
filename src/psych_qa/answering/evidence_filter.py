@@ -30,6 +30,10 @@ QUESTION_TYPE_CATEGORIES: dict[str, set[str]] = {
         "neurotransmitter_effects",
         "side_effect_mechanism",
         "classification",
+        "pearls",
+        "dosing_tips",
+        "efficacy",
+        "potential_advantages",
     },
     "dosing": {
         "dosage_range",
@@ -78,6 +82,8 @@ QUESTION_TYPE_CATEGORIES: dict[str, set[str]] = {
         "target_symptoms",
         "onset",
         "pearls",
+        "dosage_range",
+        "potential_advantages",
     },
     "special_populations": {
         "pregnancy",

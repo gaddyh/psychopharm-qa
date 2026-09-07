@@ -44,6 +44,10 @@ QUESTION_TYPE_CATEGORIES: dict[str, set[str]] = {
         "pharmacokinetics",
         "elderly",
         "pediatric",
+        "neurobiology",
+        "discontinuation",
+        "clinical_pearls",
+        "long_term_use",
     },
     "side_effects": {
         "side_effects",
@@ -54,6 +58,12 @@ QUESTION_TYPE_CATEGORIES: dict[str, set[str]] = {
         "contraindications",
         "overdose",
         "monitoring",
+        "cardiac_impairment",
+        "dosing_tips",
+        "pearls",
+        "potential_advantages",
+        "potential_disadvantages",
+        "elderly",
     },
     "interactions": {
         "interactions",
@@ -67,6 +77,7 @@ QUESTION_TYPE_CATEGORIES: dict[str, set[str]] = {
         "treatment_failure",
         "target_symptoms",
         "onset",
+        "pearls",
     },
     "special_populations": {
         "pregnancy",
@@ -76,6 +87,8 @@ QUESTION_TYPE_CATEGORIES: dict[str, set[str]] = {
         "cardiac_impairment",
         "elderly",
         "pediatric",
+        "contraindications",
+        "dosing_tips",
     },
     "pharmacokinetics": {
         "pharmacokinetics",
@@ -83,6 +96,9 @@ QUESTION_TYPE_CATEGORIES: dict[str, set[str]] = {
         "habit_forming",
         "long_term_use",
         "discontinuation",
+        "onset",
+        "efficacy",
+        "renal_impairment",
     },
     "comparison": {
         # Comparison questions need broad context

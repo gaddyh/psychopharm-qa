@@ -3,15 +3,26 @@
 Scores for:
 1. Retrieval recall (where required_answer_points exist)
 2. Expected outcome match (does the answer status match expected_outcome?)
-3. Required behaviors (heuristic checks on answer content)
-4. Forbidden behaviors (heuristic checks for things that should NOT appear)
+3. Required behaviors (LLM judge — screening before human review)
+4. Forbidden behaviors (LLM judge — screening before human review)
 
 Unlike the baseline golden set, performance is expected to fall below 100%.
 The purpose is to expose where reasoning and trust boundaries break.
+
+Usage:
+    # Retrieval + outcome only (no API calls):
+    python -m psych_qa.evaluation.hard_runner
+
+    # Full evaluation with LLM judge (requires OPENAI_API_KEY + JUDGE_MODEL):
+    python -m psych_qa.evaluation.hard_runner --judge
+
+    # Full evaluation with judge, using real answers from the answer service:
+    python -m psych_qa.evaluation.hard_runner --judge --real-answers
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 from typing import Any
@@ -21,31 +32,74 @@ from .matchers import compute_recall_at_k, build_drug_slug_lookup
 from .schemas import HardGoldCase, ExpectedOutcome
 
 
-def evaluate_hard_set() -> dict[str, Any]:
+def _build_mock_answer(case: HardGoldCase, ep: dict[str, Any] | None) -> dict[str, Any]:
+    """Build a mock answer for cases where we don't run the full answer service.
+
+    For retrieval-only validation, we construct a minimal answer so the judge
+    can still evaluate outcome matching. For real evaluation, use --real-answers.
+    """
+    if case.expected_status.value == "abstained":
+        return {
+            "status": "abstained",
+            "direct_answer": "",
+            "explanation": "The system abstained from answering this question.",
+            "claims": [],
+        }
+    if case.expected_status.value == "needs_clarification":
+        return {
+            "status": "needs_clarification",
+            "direct_answer": "",
+            "explanation": "The system requested clarification before answering.",
+            "clarification_question": "Could you provide more detail?",
+            "claims": [],
+        }
+    # For answered cases, return a placeholder — real evaluation needs --real-answers
+    return {
+        "status": "answered",
+        "direct_answer": "(mock — use --real-answers for full evaluation)",
+        "explanation": "",
+        "claims": [],
+    }
+
+
+def evaluate_hard_set(
+    *,
+    use_judge: bool = False,
+    use_real_answers: bool = False,
+) -> dict[str, Any]:
     """Run the hard challenge set evaluation.
 
-    Returns a report dict with per-case results and summary.
+    Args:
+        use_judge: If True, run the LLM judge for behavior scoring.
+        use_real_answers: If True, run the full answer service for each case
+                         (requires API calls). If False, use mock answers.
+
+    Returns:
+        Report dict with per-case results and summary.
     """
     cases = load_dataset("golden_hard")
     drug_slug_lookup = build_drug_slug_lookup()
 
     results = []
     outcome_matches = 0
-    behavior_passes = 0
-    behavior_total = 0
     recall_passes = 0
     recall_total = 0
+    judge_passes = 0
+    judge_total = 0
+    required_behavior_passes = 0
+    required_behavior_total = 0
+    forbidden_behavior_passes = 0
+    forbidden_behavior_total = 0
 
     for i, case in enumerate(cases, 1):
         conv_id = case.metadata.get("conversation_id", "?")
         turn = case.metadata.get("turn", 1)
 
-        # --- Retrieval validation (where required_answer_points exist) ---
+        # --- Retrieval validation ---
         recall_result = None
+        ep = None
         if case.required_answer_points:
             recall_total += 1
-            # For hard cases, we validate that the evidence CAN be retrieved
-            # but we don't mock the LLM — we check if evidence exists
             from ..answering.evidence_builder import build_evidence_package
             from ..retrieval.question_parser import parse_question_with_context
             from unittest.mock import patch
@@ -92,8 +146,33 @@ def evaluate_hard_set() -> dict[str, Any]:
             except Exception as e:
                 recall_result = {"recall": 0.0, "points_covered": 0, "points_total": len(case.required_answer_points), "error": str(e)}
 
+        # --- Get answer (real or mock) ---
+        answer = None
+        if use_real_answers:
+            from ..answering.answer_service import answer_question
+            import uuid
+
+            # Build conversation context for the answer service
+            conv_id_uuid = None
+            # For real answers, we'd need to replay the conversation
+            # For now, just answer the current question
+            try:
+                result = answer_question(case.question, conversation_id=None)
+                answer = {
+                    "status": result.status,
+                    "direct_answer": result.direct_answer,
+                    "explanation": result.explanation,
+                    "claims": [c.model_dump() for c in result.claims] if result.claims else [],
+                    "clarification_question": result.clarification_question,
+                }
+                ep = result.evidence_package.model_dump() if result.evidence_package else ep
+            except Exception as e:
+                answer = {"status": "error", "direct_answer": str(e), "explanation": "", "claims": []}
+
+        if answer is None:
+            answer = _build_mock_answer(case, ep)
+
         # --- Expected outcome ---
-        # Map expected_outcome to expected_status
         outcome_to_status = {
             ExpectedOutcome.SUPPORTED_ANSWER: "answered",
             ExpectedOutcome.PARTIAL_ANSWER: "answered",
@@ -108,27 +187,51 @@ def evaluate_hard_set() -> dict[str, Any]:
         if outcome_match:
             outcome_matches += 1
 
-        # --- Required behaviors (heuristic checks) ---
-        required_behavior_results = []
-        for behavior in case.required_behaviors:
-            behavior_total += 1
-            # These are heuristic checks — a real evaluation would use an LLM judge
-            # For now, we just record that the behavior exists and needs manual review
-            required_behavior_results.append({
-                "behavior": behavior,
-                "auto_check": "manual_review_required",
-            })
+        # --- LLM Judge ---
+        judge_verdict = None
+        if use_judge:
+            from .judge import judge_answer
 
-        # --- Forbidden behaviors (heuristic checks) ---
-        forbidden_behavior_results = []
-        for behavior in case.forbidden_behaviors:
-            behavior_total += 1
-            forbidden_behavior_results.append({
-                "behavior": behavior,
-                "auto_check": "manual_review_required",
-            })
+            context_for_judge = [
+                {
+                    "turn": t.turn,
+                    "question": t.question,
+                    "answer_summary": t.answer_summary,
+                }
+                for t in case.conversation_context
+            ]
 
-        results.append({
+            try:
+                judge_verdict = judge_answer(
+                    resolved_question=case.expected_resolution or case.question,
+                    expected_outcome=case.expected_outcome.value,
+                    expected_status=case.expected_status.value,
+                    required_behaviors=case.required_behaviors,
+                    forbidden_behaviors=case.forbidden_behaviors,
+                    answer=answer,
+                    evidence=ep or {},
+                    context=context_for_judge,
+                )
+
+                # Count behavior results
+                for v in judge_verdict.get("required_behavior_verdicts", []):
+                    required_behavior_total += 1
+                    if v["verdict"] == "demonstrated":
+                        required_behavior_passes += 1
+
+                for v in judge_verdict.get("forbidden_behavior_verdicts", []):
+                    forbidden_behavior_total += 1
+                    if v["verdict"] == "avoided":
+                        forbidden_behavior_passes += 1
+
+                judge_total += 1
+                if judge_verdict.get("overall", {}).get("pass", False):
+                    judge_passes += 1
+            except Exception as e:
+                judge_verdict = {"error": str(e), "overall": {"pass": False, "confidence": 0, "summary": f"Judge error: {e}"}}
+
+        # --- Build result ---
+        result_entry = {
             "case_id": i,
             "conversation_id": conv_id,
             "turn": turn,
@@ -138,10 +241,11 @@ def evaluate_hard_set() -> dict[str, Any]:
             "outcome_match": outcome_match,
             "recall_at_k": recall_result["recall"] if recall_result else None,
             "required_points": f"{recall_result['points_covered']}/{recall_result['points_total']}" if recall_result else "N/A",
-            "required_behaviors": required_behavior_results,
-            "forbidden_behaviors": forbidden_behavior_results,
+            "answer_status": answer.get("status"),
+            "judge": judge_verdict,
             "reviewer_notes": case.reviewer_notes,
-        })
+        }
+        results.append(result_entry)
 
     total = len(cases)
     summary = {
@@ -151,19 +255,25 @@ def evaluate_hard_set() -> dict[str, Any]:
         "recall_passes": recall_passes,
         "recall_total": recall_total,
         "recall_pass_rate": round(recall_passes / recall_total, 4) if recall_total else None,
-        "behavior_checks_total": behavior_total,
-        "behavior_checks_auto_passed": 0,  # requires LLM judge — not yet implemented
-        "behavior_checks_manual_review": behavior_total,
+        "judge_passes": judge_passes,
+        "judge_total": judge_total,
+        "judge_pass_rate": round(judge_passes / judge_total, 4) if judge_total else None,
+        "required_behavior_passes": required_behavior_passes,
+        "required_behavior_total": required_behavior_total,
+        "forbidden_behavior_passes": forbidden_behavior_passes,
+        "forbidden_behavior_total": forbidden_behavior_total,
         "expected_performance": "below_100_percent",
         "purpose": "expose_reasoning_and_trust_boundary_failures",
+        "judge_enabled": use_judge,
+        "real_answers": use_real_answers,
     }
 
     return {"summary": summary, "results": results}
 
 
-def run_and_save() -> dict[str, Any]:
+def run_and_save(*, use_judge: bool = False, use_real_answers: bool = False) -> dict[str, Any]:
     """Run the hard set evaluation and save to evals/results/latest_hard_run.json."""
-    report = evaluate_hard_set()
+    report = evaluate_hard_set(use_judge=use_judge, use_real_answers=use_real_answers)
     out_path = Path("evals/results/latest_hard_run.json")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as f:
@@ -172,15 +282,33 @@ def run_and_save() -> dict[str, Any]:
 
 
 if __name__ == "__main__":
-    report = run_and_save()
+    parser = argparse.ArgumentParser(description="Run the hard challenge set evaluation")
+    parser.add_argument("--judge", action="store_true", help="Enable LLM judge for behavior scoring")
+    parser.add_argument("--real-answers", action="store_true", help="Run the full answer service (requires API calls)")
+    args = parser.parse_args()
+
+    report = run_and_save(use_judge=args.judge, use_real_answers=args.real_answers)
     s = report["summary"]
     print(f"Hard Challenge Set Results")
     print(f"  Total cases:          {s['total_cases']}")
     print(f"  Outcome matches:      {s['outcome_matches']}/{s['total_cases']} ({s['outcome_match_rate']:.1%})")
-    print(f"  Recall passes:        {s['recall_passes']}/{s['recall_total']}" if s['recall_total'] else "  Recall: N/A")
-    print(f"  Behavior checks:      {s['behavior_checks_total']} (all require manual review)")
+    if s['recall_total']:
+        print(f"  Recall passes:        {s['recall_passes']}/{s['recall_total']}")
+    if s['judge_total']:
+        print(f"  Judge passes:         {s['judge_passes']}/{s['judge_total']} ({s['judge_pass_rate']:.1%})")
+        print(f"  Required behaviors:   {s['required_behavior_passes']}/{s['required_behavior_total']}")
+        print(f"  Forbidden behaviors:  {s['forbidden_behavior_passes']}/{s['forbidden_behavior_total']}")
+    else:
+        print(f"  Behavior checks:      (use --judge to enable LLM judge)")
     print(f"  Expected performance: {s['expected_performance']}")
     print()
     for r in report["results"]:
         recall_str = f"{r['recall_at_k']:.0%}" if r["recall_at_k"] is not None else "N/A"
-        print(f"  [{r['conversation_id']} T{r['turn']}] outcome={r['expected_outcome']:25s} recall={recall_str:>5s}  {r['question'][:50]}")
+        judge_str = ""
+        if r.get("judge"):
+            j = r["judge"]
+            if "overall" in j:
+                judge_str = f" judge={'PASS' if j['overall']['pass'] else 'FAIL'}({j['overall']['confidence']:.1f})"
+            elif "error" in j:
+                judge_str = f" judge=ERROR"
+        print(f"  [{r['conversation_id']} T{r['turn']}] outcome={r['expected_outcome']:25s} recall={recall_str:>5s}{judge_str}  {r['question'][:45]}")

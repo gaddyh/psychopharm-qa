@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     openai_embedding_model: str = Field(default="text-embedding-3-small")
     embedding_dimensions: int = Field(default=1536)
 
+    # Judge model (separate from chat model — used for behavior evaluation)
+    judge_model: str = Field(default="gpt-5.4")
+
     # App
     streamlit_server_port: int = Field(default=8501)
     log_level: str = Field(default="INFO")

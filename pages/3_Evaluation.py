@@ -19,7 +19,7 @@ try:
     with engine.connect() as conn:
         rows = conn.execute(
             text("""
-                SELECT id, question, answer, llm_model, llm_latency_ms, metrics, created_at
+                SELECT id, question, answer, llm_model, llm_latency_ms, metrics, versions, created_at
                 FROM answer_traces ORDER BY id DESC LIMIT 200
             """)
         ).fetchall()
@@ -36,6 +36,7 @@ traces = []
 for r in rows:
     answer = r[2] if isinstance(r[2], dict) else (json.loads(r[2]) if r[2] else {})
     m = r[5] if isinstance(r[5], dict) else (json.loads(r[5]) if r[5] else {})
+    v = r[6] if isinstance(r[6], dict) else (json.loads(r[6]) if r[6] else {})
     traces.append({
         "id": r[0],
         "question": r[1],
@@ -43,7 +44,8 @@ for r in rows:
         "llm_model": r[3],
         "llm_latency_ms": r[4],
         "metrics": m,
-        "created_at": r[6],
+        "versions": v,
+        "created_at": r[7],
     })
 
 st.markdown(f"**{len(traces)} traces** loaded.")
@@ -61,13 +63,16 @@ if all_metrics:
         st.metric("Abstention rate", f"{agg.get('abstention_rate', 0):.1%}")
     with sc2:
         st.metric("Avg citation validity", f"{agg.get('avg_citation_validity', 0):.1%}")
-        st.metric("Avg citation coverage", f"{agg.get('citation_coverage_mean', 0):.1%}")
+        st.metric("Avg citation completeness", f"{agg.get('avg_citation_completeness', 0):.1%}")
     with sc3:
         st.metric("Avg total latency", f"{agg.get('total_latency_ms_mean', 0):.0f}ms")
         st.metric("Avg LLM latency", f"{agg.get('llm_latency_ms_mean', 0):.0f}ms")
     with sc4:
         st.metric("Avg sources used", f"{agg.get('sources_used_mean', 0):.1f}/3")
         st.metric("Avg evidence utilization", f"{agg.get('evidence_utilization_mean', 0):.1%}")
+
+    if "avg_citation_entailment" in agg:
+        st.metric("Avg citation entailment", f"{agg.get('avg_citation_entailment', 0):.1%}")
 
     # Status distribution
     st.markdown("### Status Distribution")
@@ -98,12 +103,11 @@ for t in traces:
         "Question": t["question"][:60],
         "Status": m.get("status", t["status"]),
         "Sources": f"{m.get('sources_used', 0)}/3",
-        "NbN": m.get("nbn_cited", 0),
-        "Stahl": m.get("stahl_cited", 0),
-        "Kaplan": m.get("kaplan_cited", 0),
-        "Cov%": f"{m.get('citation_coverage', 0):.0%}",
+        "Claims": m.get("total_claims", 0),
+        "Cmpl%": f"{m.get('citation_completeness', 0):.0%}",
         "Valid%": f"{m.get('citation_validity', 0):.0%}",
-        "Util%": f"{m.get('evidence_utilization', 0):.0%}",
+        "Crit": m.get("critical_claims", 0),
+        "UnsupCrit": m.get("unsupported_critical_claims", 0),
         "Latency": f"{m.get('total_latency_ms', 0)}ms",
     })
 df = pd.DataFrame(table_data)
@@ -118,3 +122,7 @@ selected = next(t for t in traces if t["id"] == selected_id)
 if selected["metrics"]:
     m = selected["metrics"]
     st.json(m)
+
+if selected.get("versions"):
+    st.markdown("#### Version Metadata")
+    st.json(selected["versions"])

@@ -54,7 +54,7 @@ def _filter_drug_names(names: list[str]) -> list[str]:
 
 
 def parse_question(question: str) -> dict:
-    """Parse a question using the LLM to extract drugs, type, and concepts."""
+    """Parse a question using the LLM to extract drugs, type, concepts, premises."""
     client = get_llm_client()
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -64,6 +64,9 @@ def parse_question(question: str) -> dict:
         result, _, _, _ = client.chat_structured(messages, schema=QUESTION_PARSE_SCHEMA)
         # Post-filter: remove any classification terms the LLM still extracted
         result["drug_names"] = _filter_drug_names(result.get("drug_names", []))
+        # Ensure new fields have defaults
+        result.setdefault("premises", [])
+        result.setdefault("is_patient_specific", False)
         return result
     except Exception as e:
         logger.warning(f"LLM question parsing failed ({e}), using fallback")
@@ -107,4 +110,6 @@ def _fallback_parse(question: str) -> dict:
         "drug_names": drug_names,
         "question_type": qtype,
         "concepts": [],
+        "premises": [],
+        "is_patient_specific": bool(re.search(r"my patient|should i give|what if i|patient has|this patient", q_lower)),
     }

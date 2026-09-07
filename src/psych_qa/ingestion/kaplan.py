@@ -133,8 +133,12 @@ def chunk_pages(
     sections: list[dict[str, Any]],
     target_tokens: int = 500,
     overlap_tokens: int = 100,
+    max_tokens: int = 650,
 ) -> list[dict[str, Any]]:
     """Chunk pages into parent (section) and child (passage) chunks.
+
+    After initial chunking, any chunk exceeding max_tokens is split further
+    by sentences until all chunks are <= max_tokens.
 
     Returns list of chunk dicts.
     """
@@ -147,6 +151,21 @@ def chunk_pages(
             if s["physical_page_start"] <= pdf_page <= s["physical_page_end"]:
                 return s
         return None
+
+    def make_chunk(text: str, pdf_page: int, section: dict | None) -> dict[str, Any]:
+        nonlocal chunk_idx
+        chunk = {
+            "chunk_index": chunk_idx,
+            "chunk_type": "text",
+            "text": text.strip(),
+            "physical_pdf_page": pdf_page,
+            "section_id": section["id"] if section else None,
+            "section_number": section["section_number"] if section else None,
+            "section_title": section["title"] if section else None,
+            "input_hash": _text_hash(text),
+        }
+        chunk_idx += 1
+        return chunk
 
     for page in pages:
         text = page["text"]
@@ -172,19 +191,7 @@ def chunk_pages(
 
             if current_tokens + para_tokens > target_tokens and current_text:
                 # Flush current chunk
-                chunks.append(
-                    {
-                        "chunk_index": chunk_idx,
-                        "chunk_type": "text",
-                        "text": current_text.strip(),
-                        "physical_pdf_page": pdf_page,
-                        "section_id": section["id"] if section else None,
-                        "section_number": section["section_number"] if section else None,
-                        "section_title": section["title"] if section else None,
-                        "input_hash": _text_hash(current_text),
-                    }
-                )
-                chunk_idx += 1
+                chunks.append(make_chunk(current_text, pdf_page, section))
 
                 # Keep overlap from end of current text
                 overlap_text = current_text[-overlap_tokens * 4 :]  # approx chars
@@ -199,21 +206,99 @@ def chunk_pages(
 
         # Flush remaining
         if current_text.strip():
-            chunks.append(
-                {
-                    "chunk_index": chunk_idx,
-                    "chunk_type": "text",
-                    "text": current_text.strip(),
-                    "physical_pdf_page": pdf_page,
-                    "section_id": section["id"] if section else None,
-                    "section_number": section["section_number"] if section else None,
-                    "section_title": section["title"] if section else None,
-                    "input_hash": _text_hash(current_text),
-                }
-            )
-            chunk_idx += 1
+            chunks.append(make_chunk(current_text, pdf_page, section))
+
+    # Post-process: split any oversized chunks by sentences
+    chunks = _split_oversized_chunks(chunks, max_tokens, overlap_tokens)
+
+    # Re-index after splitting
+    for i, chunk in enumerate(chunks):
+        chunk["chunk_index"] = i
 
     return chunks
+
+
+def _split_oversized_chunks(
+    chunks: list[dict[str, Any]],
+    max_tokens: int,
+    overlap_tokens: int,
+) -> list[dict[str, Any]]:
+    """Split any chunk exceeding max_tokens into smaller chunks by sentences."""
+    result: list[dict[str, Any]] = []
+
+    for chunk in chunks:
+        text = chunk["text"]
+        token_count = _count_tokens(text)
+
+        if token_count <= max_tokens:
+            result.append(chunk)
+            continue
+
+        # Split by sentences (keep sentence-ending punctuation)
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        if len(sentences) <= 1:
+            # Can't split by sentences — split by tokens (hard cut)
+            result.extend(_hard_split_chunk(chunk, max_tokens, overlap_tokens))
+            continue
+
+        # Greedily pack sentences into sub-chunks under max_tokens
+        current_text = ""
+        current_tokens = 0
+
+        for sent in sentences:
+            sent_tokens = _count_tokens(sent)
+            if current_tokens + sent_tokens > max_tokens and current_text:
+                # Flush sub-chunk
+                sub = dict(chunk)
+                sub["text"] = current_text.strip()
+                sub["input_hash"] = _text_hash(current_text)
+                result.append(sub)
+
+                # Overlap: keep last few sentences
+                overlap_text = current_text[-overlap_tokens * 4 :]
+                current_text = overlap_text + " " + sent
+                current_tokens = _count_tokens(current_text)
+            else:
+                if current_text:
+                    current_text += " " + sent
+                else:
+                    current_text = sent
+                current_tokens += sent_tokens
+
+        if current_text.strip():
+            sub = dict(chunk)
+            sub["text"] = current_text.strip()
+            sub["input_hash"] = _text_hash(current_text)
+            result.append(sub)
+
+    return result
+
+
+def _hard_split_chunk(
+    chunk: dict[str, Any],
+    max_tokens: int,
+    overlap_tokens: int,
+) -> list[dict[str, Any]]:
+    """Hard-split a chunk that can't be split by sentences (token-level cut)."""
+    text = chunk["text"]
+    # Use the encoder to split at token boundaries
+    tokens = _ENCODER.encode(text)
+    result: list[dict[str, Any]] = []
+
+    start = 0
+    while start < len(tokens):
+        end = min(start + max_tokens, len(tokens))
+        sub_text = _ENCODER.decode(tokens[start:end])
+        sub = dict(chunk)
+        sub["text"] = sub_text.strip()
+        sub["input_hash"] = _text_hash(sub_text)
+        result.append(sub)
+        if end >= len(tokens):
+            break
+        # Move forward with overlap
+        start = end - overlap_tokens
+
+    return result
 
 
 def extract_entity_metadata(text: str, known_drugs: dict[str, int]) -> dict[str, Any]:
@@ -282,9 +367,8 @@ def ingest_kaplan(
     version_label = "Kaplan & Sadock's 11th Edition, Chapter 33"
 
     if page_range is None:
-        # POC: extract a small range around antipsychotics section (~33.13)
-        # Based on earlier exploration, this is around p.10000-10500
-        page_range = (10000, 10500)
+        # Full Chapter 33 range from config (PDF p.9786-11300, 0-based)
+        page_range = (settings.kaplan_ch33_start_page, settings.kaplan_ch33_end_page)
 
     # Stage 1: Extract pages
     logger.info(f"Extracting pages {page_range[0]}-{page_range[1]} from {pdf_path.name}...")

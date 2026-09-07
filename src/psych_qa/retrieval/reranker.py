@@ -13,17 +13,18 @@ logger = logging.getLogger(__name__)
 def rerank(query: str, passages: list[dict[str, Any]], top_k: int = 5) -> list[dict[str, Any]]:
     """Rerank passages using an LLM scoring prompt.
 
-    For the POC, we use a simple LLM-based relevance scoring.
+    V2: no arbitrary truncation of passage text for scoring. The LLM sees
+    the full passage (chunks are already <=700 tokens from ingestion).
     """
     if len(passages) <= top_k:
         return passages
 
     client = get_llm_client()
 
-    # Build a scoring prompt
+    # Build a scoring prompt — full passage text, no truncation
     passages_text = ""
     for i, p in enumerate(passages):
-        passages_text += f"\n[{i}] {p['text'][:300]}...\n"
+        passages_text += f"\n[{i}] {p['text']}\n"
 
     prompt = f"""Rate the relevance of each passage to the question on a scale of 0-10.
 Return JSON: {{"scores": [score0, score1, ...]}}

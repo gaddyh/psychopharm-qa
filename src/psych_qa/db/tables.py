@@ -358,6 +358,7 @@ class AnswerTrace(Base):
     evidence_package: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     answer: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     metrics: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=True)
+    versions: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=True)
     llm_model: Mapped[str] = mapped_column(Text, nullable=False)
     llm_latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -389,15 +390,28 @@ class DoctorFeedback(Base):
 
 
 class EvaluationCase(Base):
+    """One test case for offline evaluation.
+
+    V2 schema: uses stable acceptable_evidence (claim_hash/locator based, not
+    DB IDs) and required/forbidden points instead of reference paragraphs.
+    review_status tracks clinician sign-off.
+    """
     __tablename__ = "evaluation_cases"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    dataset: Mapped[str] = mapped_column(Text, nullable=False)
+    dataset: Mapped[str] = mapped_column(Text, nullable=False)  # golden_v1, abstention_v1, regression
     question: Mapped[str] = mapped_column(Text, nullable=False)
-    expected_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
     expected_status: Mapped[str | None] = mapped_column(Text, nullable=True)
-    expected_evidence_ids: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    required_answer_points: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    forbidden_claims: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    acceptable_evidence: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    reviewer_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    review_status: Mapped[str] = mapped_column(Text, nullable=False, default="needs_sasson_approval")
+    reviewed_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     metadata_: Mapped[dict[str, Any]] = mapped_column("metadata", JSONB, nullable=False, default=dict)
+
+    __table_args__ = (Index("ix_eval_case_dataset", "dataset"),)
 
 
 class EvaluationRun(Base):
@@ -408,6 +422,30 @@ class EvaluationRun(Base):
     results: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     started_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class ClinicianReview(Base):
+    """A psychiatrist's review of an answer trace.
+
+    Used to compute the 'psychiatrist-approved >=90%' and 'critical clinical
+    errors = 0' release gates. This is separate from doctor_feedback, which
+    is the online failure-discovery mechanism.
+    """
+    __tablename__ = "clinician_reviews"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    answer_trace_id: Mapped[int] = mapped_column(
+        ForeignKey("answer_traces.id"), nullable=False
+    )
+    verdict: Mapped[str] = mapped_column(Text, nullable=False)
+    # correct / correct_with_minor_issue / clinically_significant_error / unsafe_critical_error
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reviewer_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=sqltext("now()"), nullable=False
+    )
+
+    __table_args__ = (Index("ix_clinician_review_trace", "answer_trace_id"),)
 
 
 # ---------------------------------------------------------------------------

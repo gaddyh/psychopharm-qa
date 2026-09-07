@@ -34,6 +34,7 @@ def save_answer_trace(
     llm_model: str,
     llm_latency_ms: int | None = None,
     metrics: dict | None = None,
+    versions: dict | None = None,
 ) -> int:
     session = get_session()
     try:
@@ -41,8 +42,8 @@ def save_answer_trace(
             sqltext("""
                 INSERT INTO answer_traces
                     (conversation_id, question, question_understanding, evidence_package,
-                     answer, metrics, llm_model, llm_latency_ms)
-                VALUES (:cid, :q, :qu, :ep, :a, :met, :m, :lat)
+                     answer, metrics, versions, llm_model, llm_latency_ms)
+                VALUES (:cid, :q, :qu, :ep, :a, :met, :ver, :m, :lat)
                 RETURNING id
             """),
             {
@@ -52,6 +53,7 @@ def save_answer_trace(
                 "ep": json.dumps(evidence_package),
                 "a": json.dumps(answer),
                 "met": json.dumps(metrics) if metrics else None,
+                "ver": json.dumps(versions) if versions else None,
                 "m": llm_model,
                 "lat": llm_latency_ms,
             },

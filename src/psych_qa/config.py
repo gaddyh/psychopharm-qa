@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     # App
     streamlit_server_port: int = Field(default=8501)
     log_level: str = Field(default="INFO")
+    environment: str = Field(default="local")  # local / staging / production
 
     # Paths
     @property

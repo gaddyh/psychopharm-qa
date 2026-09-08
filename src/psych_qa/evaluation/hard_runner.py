@@ -148,26 +148,25 @@ def evaluate_hard_set(
 
         # --- Get answer (real or mock) ---
         answer = None
+        real_evidence = None
         if use_real_answers:
             from ..answering.answer_service import answer_question
-            import uuid
 
-            # Build conversation context for the answer service
-            conv_id_uuid = None
-            # For real answers, we'd need to replay the conversation
-            # For now, just answer the current question
             try:
                 result = answer_question(case.question, conversation_id=None)
+                answer_dict = result.get("answer", {})
                 answer = {
-                    "status": result.status,
-                    "direct_answer": result.direct_answer,
-                    "explanation": result.explanation,
-                    "claims": [c.model_dump() for c in result.claims] if result.claims else [],
-                    "clarification_question": result.clarification_question,
+                    "status": answer_dict.get("status", "answered"),
+                    "direct_answer": answer_dict.get("direct_answer", ""),
+                    "explanation": answer_dict.get("explanation", ""),
+                    "claims": answer_dict.get("claims", []),
+                    "clarification_question": answer_dict.get("clarification_question"),
                 }
-                ep = result.evidence_package.model_dump() if result.evidence_package else ep
+                real_evidence = result.get("evidence_package", {})
             except Exception as e:
+                print(f"  Answer service error: {e}")
                 answer = {"status": "error", "direct_answer": str(e), "explanation": "", "claims": []}
+                real_evidence = {}
 
         if answer is None:
             answer = _build_mock_answer(case, ep)
@@ -209,7 +208,7 @@ def evaluate_hard_set(
                     required_behaviors=case.required_behaviors,
                     forbidden_behaviors=case.forbidden_behaviors,
                     answer=answer,
-                    evidence=ep or {},
+                    evidence=real_evidence or ep or {},
                     context=context_for_judge,
                 )
 

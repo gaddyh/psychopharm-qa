@@ -15,6 +15,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+
 from ..baseline.retrieve import BaselineRetriever
 from ..config import get_settings
 from .gold_loader import GoldSet, load_gold_set
@@ -26,6 +30,7 @@ from .metrics import (
 )
 
 logger = logging.getLogger(__name__)
+console = Console()
 
 MATCHER_VERSION = "page-anchor-v1"
 K_VALUES = [5, 10, 20]
@@ -204,20 +209,121 @@ def run_retrieval_eval(
     with open(latest_path, "w") as f:
         json.dump(results, f, indent=2, default=str)
 
-    # Print summary
-    print("\n" + "=" * 60)
-    print("RETRIEVAL EVALUATION RESULTS")
-    print("=" * 60)
-    print(agg.format_summary())
-    print()
-    for cr in case_results:
-        status = "PASS" if cr.retrieval_pass else "FAIL"
-        print(f"  {cr.case_id} [{status}] "
-              f"crit@10={cr.critical_recall_at(10):.1%} "
-              f"all@10={cr.all_recall_at(10):.1%}")
-        if cr.missed_critical_at_10:
-            print(f"    Missed critical: {cr.missed_critical_at_10}")
-    print()
-    print(f"Results: {output_file}")
+    # Print rich summary
+    _print_rich_summary(results, case_results, agg, output_file, gold_set)
 
     return results
+
+
+def _print_rich_summary(
+    results: dict[str, Any],
+    case_results: list[CaseResult],
+    agg: AggregateMetrics,
+    output_file: Path,
+    gold_set: GoldSet,
+) -> None:
+    """Print rich tables with metrics, per-case results, and provenance."""
+
+    # --- Provenance panel ---
+    prov_lines = []
+    for k in ["gold_set_id", "gold_set_hash", "corpus_hash", "git_commit",
+              "pipeline_version", "matcher_version", "embedding_model"]:
+        prov_lines.append(f"[cyan]{k:20s}[/cyan] {results[k]}")
+    prov_lines.append(f"[cyan]chunk_tokens:       [/cyan] {results['chunk_tokens']}")
+    prov_lines.append(f"[cyan]overlap_tokens:     [/cyan] {results['overlap_tokens']}")
+    prov_lines.append(f"[cyan]top_k:              [/cyan] {results['top_k']}")
+    prov_lines.append(f"[cyan]ran_at:            [/cyan] {results['ran_at']}")
+    console.print(Panel("\n".join(prov_lines), title="Provenance", border_style="blue"))
+
+    # --- Aggregate metrics table ---
+    agg_table = Table(title="Aggregate Metrics", border_style="blue", show_lines=False)
+    agg_table.add_column("Metric", style="cyan", no_wrap=True)
+    agg_table.add_column("Value", justify="right", style="white")
+    agg_table.add_column("Detail", justify="right", style="dim")
+
+    passes = agg.retrieval_passes
+    pass_style = "green" if passes == agg.n_cases else ("yellow" if passes > 0 else "red")
+
+    rows = [
+        ("Cases", str(agg.n_cases), ""),
+        ("Retrieval passes", f"[{pass_style}]{passes}/{agg.n_cases}[/{pass_style}]", ""),
+        ("", "", ""),
+        ("Macro critical Recall@5", f"{agg.macro_critical_recall_at_5:.1%}", ""),
+        ("Macro critical Recall@10", f"{agg.macro_critical_recall_at_10:.1%}", "PRIMARY"),
+        ("Macro critical Recall@20", f"{agg.macro_critical_recall_at_20:.1%}", ""),
+        ("", "", ""),
+        ("Macro all-evidence Recall@5", f"{agg.macro_all_recall_at_5:.1%}", ""),
+        ("Macro all-evidence Recall@10", f"{agg.macro_all_recall_at_10:.1%}", ""),
+        ("Macro all-evidence Recall@20", f"{agg.macro_all_recall_at_20:.1%}", ""),
+        ("", "", ""),
+        ("Micro critical Recall@10", f"{agg.micro_critical_recall_at_10:.1%}",
+         f"{agg.matched_critical_pairs_at_10}/{agg.total_critical_pairs_at_10}"),
+        ("Micro all-evidence Recall@10", f"{agg.micro_all_recall_at_10:.1%}",
+         f"{agg.matched_all_pairs_at_10}/{agg.total_all_pairs_at_10}"),
+    ]
+    for metric, value, detail in rows:
+        if metric == "":
+            agg_table.add_row("", "", "")
+        else:
+            style = "bold green" if "PRIMARY" in detail else ""
+            agg_table.add_row(metric, value, detail, style=style)
+
+    console.print()
+    console.print(agg_table)
+
+    # --- Per-case table ---
+    case_table = Table(title="Per-Case Results", border_style="blue", show_lines=True)
+    case_table.add_column("Case ID", style="cyan", no_wrap=True)
+    case_table.add_column("Route", style="dim", no_wrap=True)
+    case_table.add_column("Pass", justify="center")
+    case_table.add_column("Crit@5", justify="right")
+    case_table.add_column("Crit@10", justify="right")
+    case_table.add_column("Crit@20", justify="right")
+    case_table.add_column("All@5", justify="right")
+    case_table.add_column("All@10", justify="right")
+    case_table.add_column("All@20", justify="right")
+    case_table.add_column("Missed Critical @10", style="red")
+
+    for cr in case_results:
+        pass_str = "[green]PASS[/green]" if cr.retrieval_pass else "[red]FAIL[/red]"
+        missed = ", ".join(eid.replace("K33-P", "P") for eid in cr.missed_critical_at_10)
+        if not missed:
+            missed = "[green]—[/green]"
+
+        case_table.add_row(
+            cr.case_id,
+            cr.route,
+            pass_str,
+            f"{cr.critical_recall_at(5):.0%}",
+            f"{cr.critical_recall_at(10):.0%}",
+            f"{cr.critical_recall_at(20):.0%}",
+            f"{cr.all_recall_at(5):.0%}",
+            f"{cr.all_recall_at(10):.0%}",
+            f"{cr.all_recall_at(20):.0%}",
+            missed,
+        )
+
+    console.print()
+    console.print(case_table)
+
+    # --- Missed evidence detail ---
+    evidence_by_id = gold_set.evidence_by_id
+    missed_table = Table(title="Missed Critical Evidence Detail", border_style="red", show_lines=True)
+    missed_table.add_column("Case", style="cyan", no_wrap=True)
+    missed_table.add_column("Evidence ID", style="red", no_wrap=True)
+    missed_table.add_column("Pages", justify="center")
+    missed_table.add_column("Anchor (first)", style="dim")
+
+    for case_dict in results["cases"]:
+        case_id = case_dict["case_id"]
+        for eid in case_dict.get("missed_critical_at_10", []):
+            ev = evidence_by_id.get(eid)
+            if ev:
+                pages_str = str(ev.pdf_pages)
+                anchor = ev.anchor_text[0][:60] + "..." if ev.anchor_text else ""
+                missed_table.add_row(case_id, eid, pages_str, anchor)
+
+    console.print()
+    console.print(missed_table)
+    console.print()
+    console.print(f"[dim]Results saved to:[/dim] [bold]{output_file}[/bold]")

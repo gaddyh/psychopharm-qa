@@ -24,6 +24,7 @@ dependencies = [
     "tenacity>=8.4",
     "tiktoken>=0.7",
     "pyyaml>=6.0",
+    "rich>=13.7",
 ]
 
 [project.optional-dependencies]

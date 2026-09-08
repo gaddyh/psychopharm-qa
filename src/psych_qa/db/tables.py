@@ -353,15 +353,22 @@ class AnswerTrace(Base):
     conversation_id: Mapped[int | None] = mapped_column(
         ForeignKey("conversations.id"), nullable=True
     )
+    turn_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     question: Mapped[str] = mapped_column(Text, nullable=False)
+    resolved_question: Mapped[str | None] = mapped_column(Text, nullable=True)
     question_understanding: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     evidence_package: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     answer: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     metrics: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=True)
+    versions: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=True)
     llm_model: Mapped[str] = mapped_column(Text, nullable=False)
     llm_latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=sqltext("now()"), nullable=False
+    )
+
+    __table_args__ = (
+        Index("ux_answer_traces_conv_turn", "conversation_id", "turn_number", unique=True),
     )
 
 
@@ -389,15 +396,28 @@ class DoctorFeedback(Base):
 
 
 class EvaluationCase(Base):
+    """One test case for offline evaluation.
+
+    V2 schema: uses stable acceptable_evidence (claim_hash/locator based, not
+    DB IDs) and required/forbidden points instead of reference paragraphs.
+    review_status tracks clinician sign-off.
+    """
     __tablename__ = "evaluation_cases"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    dataset: Mapped[str] = mapped_column(Text, nullable=False)
+    dataset: Mapped[str] = mapped_column(Text, nullable=False)  # golden_v1, abstention_v1, regression
     question: Mapped[str] = mapped_column(Text, nullable=False)
-    expected_answer: Mapped[str | None] = mapped_column(Text, nullable=True)
     expected_status: Mapped[str | None] = mapped_column(Text, nullable=True)
-    expected_evidence_ids: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    required_answer_points: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    forbidden_claims: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    acceptable_evidence: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    reviewer_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    review_status: Mapped[str] = mapped_column(Text, nullable=False, default="needs_sasson_approval")
+    reviewed_by: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     metadata_: Mapped[dict[str, Any]] = mapped_column("metadata", JSONB, nullable=False, default=dict)
+
+    __table_args__ = (Index("ix_eval_case_dataset", "dataset"),)
 
 
 class EvaluationRun(Base):
@@ -408,6 +428,30 @@ class EvaluationRun(Base):
     results: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     started_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class ClinicianReview(Base):
+    """A psychiatrist's review of an answer trace.
+
+    Used to compute the 'psychiatrist-approved >=90%' and 'critical clinical
+    errors = 0' release gates. This is separate from doctor_feedback, which
+    is the online failure-discovery mechanism.
+    """
+    __tablename__ = "clinician_reviews"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    answer_trace_id: Mapped[int] = mapped_column(
+        ForeignKey("answer_traces.id"), nullable=False
+    )
+    verdict: Mapped[str] = mapped_column(Text, nullable=False)
+    # correct / correct_with_minor_issue / clinically_significant_error / unsafe_critical_error
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reviewer_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=sqltext("now()"), nullable=False
+    )
+
+    __table_args__ = (Index("ix_clinician_review_trace", "answer_trace_id"),)
 
 
 # ---------------------------------------------------------------------------
@@ -468,3 +512,28 @@ def init_db(drop_first: bool = False) -> None:
                     )
                 )
                 conn.commit()
+
+    # Add conversation columns to answer_traces (for existing databases)
+    if "answer_traces" in insp.get_table_names():
+        columns = [c["name"] for c in insp.get_columns("answer_traces")]
+        with engine.connect() as conn:
+            if "turn_number" not in columns:
+                conn.execute(
+                    sqltext("ALTER TABLE answer_traces ADD COLUMN turn_number INTEGER")
+                )
+            if "resolved_question" not in columns:
+                conn.execute(
+                    sqltext("ALTER TABLE answer_traces ADD COLUMN resolved_question TEXT")
+                )
+            # Unique index for (conversation_id, turn_number)
+            indexes = insp.get_indexes("answer_traces")
+            index_names = {idx["name"] for idx in indexes}
+            if "ux_answer_traces_conv_turn" not in index_names:
+                conn.execute(
+                    sqltext(
+                        "CREATE UNIQUE INDEX ux_answer_traces_conv_turn "
+                        "ON answer_traces (conversation_id, turn_number) "
+                        "WHERE conversation_id IS NOT NULL"
+                    )
+                )
+            conn.commit()

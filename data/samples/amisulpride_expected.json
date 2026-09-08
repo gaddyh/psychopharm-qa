@@ -1,0 +1,128 @@
+{
+  "review_status": "needs_sasson_approval",
+  "reviewed_by": null,
+  "reviewed_at": null,
+  "drug_slug": "amisulpride",
+  "drug_canonical_name": "Amisulpride",
+  "note": "Expected values extracted independently from source PDFs/JSON by manual inspection, not by running the ingestion parsers. Every value must be verified by Sasson before use as a release gate.",
+
+  "nbn": {
+    "source_file": "data/raw/nbn_drugs.json",
+    "variants": [
+      {
+        "dose": "low",
+        "label": "amisulpride - low dose",
+        "nbn_id": 167,
+        "fields": {
+          "pharmacological_target": {"status": "present", "value": "Dopamine"},
+          "mode_of_action": {"status": "present", "value": "MoA Pre-synaptic antagonist"},
+          "approved_indications": {"status": "present_and_empty", "value": ""},
+          "efficacy": {"status": "present", "value": "Dysthymia (some European countries), negative symptoms of schizophrenia"},
+          "side_effects": {"status": "present", "value": "Sedation, dizziness"},
+          "pregnancy": {"status": "present", "value_prefix": "C - Risk cannot be ruled out"},
+          "committee_notes": {"status": "present", "value_prefix": "Excreted by kidney and does not alter lithium levels"},
+          "drugs_interaction": {"status": "present_and_empty", "value": ""},
+          "former_terminology": {"status": "present", "value": "Antipsychotic"},
+          "brand_names": {"status": "present", "value": "Amazeo, Amipride, Amival, Solian, Soltus, Sulpitac, Sulprix, Sulamid Paxiprid"},
+          "neurobiology_extra": {"status": "present", "value": "doses of 25-100 mg/day have been shown to be effective"},
+          "brain_circuits_human": {"status": "present_and_empty", "value": ""},
+          "brain_circuits_preclinical": {"status": "present_and_empty", "value": ""},
+          "neurotransmitter_effects_human": {"status": "present_and_empty", "value": ""},
+          "neurotransmitter_effects_preclinical": {"status": "present_and_empty", "value": ""},
+          "physiological_human": {"status": "present_and_empty", "value": ""},
+          "physiological_preclinical": {"status": "present_and_empty", "value": ""},
+          "uptake_inhibition_selectivity_NET_SERT": {"status": "present_and_empty", "value": ""},
+          "uptake_inhibition_selectivity_SERT_NET": {"status": "present_and_empty", "value": ""}
+        },
+        "normalized": {
+          "domains": [{"value": "Dopamine", "type": "canonical"}],
+          "modes_of_action": {"type": "canonical", "values": ["Receptor antagonist"]}
+        }
+      },
+      {
+        "dose": "upper",
+        "label": "amisulpride - upper dose",
+        "nbn_id": 4,
+        "fields": {
+          "pharmacological_target": {"status": "present", "value": "dopamine"},
+          "mode_of_action": {"status": "present", "value": "antagonist"},
+          "approved_indications": {"status": "present", "value": "Schizophrenia (UK; France)"},
+          "efficacy": {"status": "present", "value": "Improves of psychotic symptoms"},
+          "side_effects": {"status": "present", "value": "EPS, galactorrhea, sedation, dizziness, weight gain. Risk of tardive dyskinesia, NMS"},
+          "pregnancy": {"status": "present", "value_prefix": "C - Risk cannot be ruled out"},
+          "committee_notes": {"status": "present", "value_prefix": "Some evidence of beneficial effects of low-dose for dysthymia"},
+          "drugs_interaction": {"status": "present_and_empty", "value": ""},
+          "former_terminology": {"status": "present", "value": "antipsychotic"},
+          "brand_names": {"status": "present", "value": "Amazeo, Amipride, Amival, Solian, Soltus, Sulpitac, Sulprix, Sulamid Paxiprid"},
+          "neurobiology_extra": {"status": "present", "value_prefix": "dopamine"},
+          "brain_circuits_human": {"status": "present", "value_prefix": "Moderate levels of D2/D3 receptor occupancy"},
+          "brain_circuits_preclinical": {"status": "present_and_empty", "value": ""},
+          "neurotransmitter_effects_preclinical": {"status": "present", "value": "antagonist at D2 and D3, 5-HT7 receptors"},
+          "neurotransmitter_effects_human": {"status": "present", "value_prefix": "Blocks central dopamine D2 receptors"},
+          "physiological_human": {"status": "present", "value_prefix": "Acute dose in healthy subjects"},
+          "physiological_preclinical": {"status": "present_and_empty", "value": ""},
+          "uptake_inhibition_selectivity_NET_SERT": {"status": "present_and_empty", "value": ""},
+          "uptake_inhibition_selectivity_SERT_NET": {"status": "present_and_empty", "value": ""}
+        },
+        "normalized": {
+          "domains": [{"value": "Dopamine", "type": "canonical"}],
+          "modes_of_action": {"type": "canonical", "values": ["Receptor antagonist"]}
+        }
+      }
+    ],
+    "expected_claim_counts": {
+      "low": 9,
+      "upper": 14,
+      "total": 23,
+      "note": "Empty fields (present_and_empty) should NOT produce claims. This is a diagnostic, not a hard gate."
+    },
+    "brand_aliases": [
+      "Amazeo", "Amipride", "Amival", "Solian", "Soltus",
+      "Sulpitac", "Sulprix", "Sulamid Paxiprid"
+    ]
+  },
+
+  "stahl": {
+    "source_file": "data/raw/Prescriber's Guide_ Stahl's Essential Psychopharmacology.pdf",
+    "page_range": {"physical_pdf_start": 33, "physical_pdf_end": 39, "printed_book_start": 17, "printed_book_end": 23},
+    "expected_sections": [
+      "THERAPEUTICS", "SIDE EFFECTS", "DOSING AND USE",
+      "SPECIAL POPULATIONS", "THE ART OF PSYCHOPHARMACOLOGY"
+    ],
+    "fda_bold_claims": [
+      {"text_prefix": "Prevention of postoperative nausea and vomiting", "category": "indication", "fda_approved": true},
+      {"text_prefix": "Treatment of PONV", "category": "indication", "fda_approved": true},
+      {"text_prefix": "Schizophrenia, acute and chronic", "category": "indication", "fda_approved": false},
+      {"text_prefix": "Dysthymia", "category": "indication", "fda_approved": false}
+    ],
+    "critical_claim_fingerprints": [
+      {"category": "mechanism", "text_contains": "Blocks dopamine 3 receptors"},
+      {"category": "mechanism", "text_contains": "presynaptic"},
+      {"category": "dosage_range", "text_contains": "Dysthymia: 50 mg/day"},
+      {"category": "dosage_range", "text_contains": "400"},
+      {"category": "dosing_instructions", "text_contains": "Initial 400"},
+      {"category": "contraindications", "text_contains": "pheochromocytoma"},
+      {"category": "renal_impairment", "text_contains": "renal"},
+      {"category": "pregnancy", "text_contains": "teratogenic"},
+      {"category": "interactions", "text_contains": "levodopa"},
+      {"category": "side_effect_mechanism", "text_contains": "prolactin"},
+      {"category": "pharmacokinetics", "text_contains": "12 hours"},
+      {"category": "class", "text_contains": "benzamide"},
+      {"category": "cardiac_impairment", "text_contains": "QTc"}
+    ],
+    "expected_category_count_min": 30,
+    "diagnostic_total_claims": 179,
+    "total_claims_tolerance": 15,
+    "note": "Total claim count is diagnostic (monitored, not a hard gate). Critical fingerprints and section coverage are the hard gates."
+  },
+
+  "kaplan": {
+    "source_file": "data/raw/Robert Boland, Marcia L. Verdiun - Kaplan.pdf",
+    "chapter": "33",
+    "page_range": {"physical_pdf_start": 9786, "physical_pdf_end": 11300},
+    "expected_sections_min": 50,
+    "expected_chunks_min": 1000,
+    "max_child_chunk_tokens": 700,
+    "amisulpride_drug_id_note": "Resolve dynamically via find_by_slug('amisulpride'), never hardcode"
+  }
+}

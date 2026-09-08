@@ -59,13 +59,14 @@ class LLMClient:
         *,
         schema: dict[str, Any],
         temperature: float = 0.2,
+        model: str | None = None,
     ) -> tuple[dict[str, Any], int, int, int]:
         """Send a chat completion with structured JSON output.
 
         Returns (parsed_json, prompt_tokens, completion_tokens, latency_ms).
         """
         resp = self._client.chat.completions.create(
-            model=self.chat_model,
+            model=model or self.chat_model,
             messages=messages,
             temperature=temperature,
             response_format={

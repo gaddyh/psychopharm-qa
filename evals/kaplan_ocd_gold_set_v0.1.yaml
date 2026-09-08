@@ -1,0 +1,773 @@
+gold_set:
+  id: kaplan_ch33_ocd_gold_v0.1
+  title: "Kaplan Chapter 33 — OCD Clinical-to-Mechanism Gold Set"
+  language: en
+  status: draft_needs_clinician_approval
+  needs_approval: true
+  approver: "Dr. Sasson Tzemach"
+  purpose: >-
+    Seed evaluation set for a naive RAG baseline. The cases test movement from
+    an OCD clinical problem through treatment strategy and mechanism to drug
+    candidates and safety trade-offs.
+  corpus:
+    file_name: kaplan_chapter33.pdf
+    chapter: 33
+    page_numbering: "0-based PDF page indices (PyMuPDF page_index)"
+    scope_note: >-
+      This chapter is pharmacology-first rather than a complete OCD guideline.
+      Gold answers must expose when the chapter supports a statement only
+      partially or does not provide a full treatment algorithm.
+  evaluation_policy:
+    release_gate_eligible: false
+    reason: "Seed cases require clinician review before use as release gates."
+    retrieval:
+      primary_metric: critical_evidence_recall_at_10
+      report_metrics:
+        - critical_evidence_recall_at_5
+        - critical_evidence_recall_at_10
+        - critical_evidence_recall_at_20
+        - all_evidence_recall_at_5
+        - all_evidence_recall_at_10
+        - all_evidence_recall_at_20
+      match_unit: evidence_id
+    answer:
+      report_metrics:
+        - required_claim_recall
+        - critical_required_claim_recall
+        - forbidden_claim_violations
+        - citation_entailment
+        - citation_completeness
+        - certainty_preservation
+        - abstention_or_limitation_correctness
+    pass_policy:
+      retrieval: "All critical evidence IDs retrieved in top 10."
+      answer: >-
+        All critical claims present and supported; no forbidden claim; all
+        explicit limitations preserved.
+
+evidence_catalog:
+  - evidence_id: K33-P038-OCD-OUTCOMES
+    pdf_pages: [36, 37]
+    section: "Treatment Outcomes — Response and Remission"
+    evidence_type: clinical_outcome
+    anchor_text:
+      - "full remission from OCD with SSRI treatment alone over a 3-year period is 38%"
+    excerpt: >-
+      OCD is more likely to have residual manifestations than major depression
+      or panic disorder. With SSRI treatment alone over three years, full
+      remission is reported as 38% and partial remission as approximately 65%.
+
+  - evidence_id: K33-P038-TREATMENT-FAILURE
+    pdf_pages: [37]
+    section: "Treatment Failure"
+    evidence_type: practical_guidance
+    anchor_text:
+      - "Treatment Failure"
+      - "initial treatment plan should anticipate the possibility that the medication may be ineffective"
+    excerpt: >-
+      Before declaring treatment failure, reassess diagnosis, whether symptoms
+      are adverse effects, adequacy of dose and duration, interactions, and
+      adherence.
+
+  - evidence_id: K33-P038-TREATMENT-RESISTANCE
+    pdf_pages: [37]
+    section: "Treatment Resistance"
+    evidence_type: treatment_strategy
+    anchor_text:
+      - "Treatment Resistance"
+      - "Some patients fail to respond to repeated trials"
+    excerpt: >-
+      Strategies after repeated failures include drug combinations, high-dose
+      therapy, and unconventional drugs. Comparative evidence for any one
+      strategy is limited.
+
+  - evidence_id: K33-P040-OCD-AUGMENTATION
+    pdf_pages: [39]
+    section: "Combination of Drugs"
+    evidence_type: treatment_strategy
+    anchor_text:
+      - "SSRIs typically produce partial improvement in patients with OCD, so the addition of a serotonin-dopamine antagonist may be helpful"
+    excerpt: >-
+      SSRIs typically produce partial improvement in OCD, and adding a
+      serotonin–dopamine antagonist may be helpful. Adding medication after
+      partial benefit is distinguished from replacing an ineffective agent.
+
+  - evidence_id: K33-P075-OCD-DOPAMINE-AUGMENTERS
+    pdf_pages: [74]
+    section: "Dopamine Blockers and Other Indications"
+    evidence_type: clinical_efficacy
+    anchor_text:
+      - "low doses of risperidone or aripiprazole are proven helpful augmentation strategies for serotonergic enhancers"
+      - "clozapine was reported to worsen OCD symptoms"
+    excerpt: >-
+      Low-dose risperidone or aripiprazole are described as helpful augmentation
+      strategies for serotonergic enhancers, especially with a comorbid tic
+      disorder; clozapine has been reported to worsen OCD symptoms.
+
+  - evidence_id: K33-P076-OCD-SRI-SPECIFICITY
+    pdf_pages: [75]
+    section: "Monoamine Enhancers and the Treatment of Depression"
+    evidence_type: comparative_pharmacology
+    anchor_text:
+      - "serotonin reuptake inhibitors (SRI)"
+      - "desipramine are inferior in treating O"
+    excerpt: >-
+      OCD treatment is linked specifically to serotonin reuptake inhibitors,
+      not to the broad historical label antidepressants; desipramine is given
+      as an antidepressant that is inferior for OCD.
+
+  - evidence_id: K33-P380-OCD-SSRI-EFFICACY
+    pdf_pages: [378, 379]
+    section: "Selective Serotonin Reuptake Inhibitors — Obsessive-Compulsive Disorder"
+    evidence_type: clinical_efficacy
+    anchor_text:
+      - "Placebo-controlled studies have demonstrated SSRIs to be efficacious for the treatment of OCD in adults and children"
+    excerpt: >-
+      Placebo-controlled studies support SSRI efficacy for OCD in adults and
+      children. Some cases need doses above depression maxima, and full response
+      takes longer than in depressive disorders.
+
+  - evidence_id: K33-P381-SERT-INHIBITION
+    pdf_pages: [380]
+    section: "Selective Serotonin Reuptake Inhibitors — Pharmacodynamics"
+    evidence_type: basic_pharmacology
+    anchor_text:
+      - "hibit the action of 5-HT transporters"
+      - "raises 5-HT levels in the central nervous system"
+    excerpt: >-
+      SSRIs bind to and inhibit 5-HT transporters, raising 5-HT levels in the
+      central nervous system and elsewhere.
+
+  - evidence_id: K33-P382-OCD-OFC-OCCUPANCY
+    pdf_pages: [381]
+    section: "Selective Serotonin Reuptake Inhibitors — Pharmacodynamics"
+    evidence_type: mechanistic_rationale
+    certainty: suggested
+    anchor_text:
+      - "lower occupancy with a minimal effective dose of escitalopram has been reported in the orbitofrontal cortex"
+    excerpt: >-
+      Lower transporter occupancy at a minimal escitalopram dose was reported
+      in orbitofrontal cortex. The authors offer this as an explanation for why
+      OCD commonly requires higher SSRI doses than depression.
+
+  - evidence_id: K33-P383-OCD-DELAY
+    pdf_pages: [382]
+    section: "Basis for the Delayed Onset of Therapeutic Effects of SSRIs"
+    evidence_type: preclinical_mechanistic_rationale
+    certainty: suggested
+    anchor_text:
+      - "terminal autoreceptors in the orbitofrontal cortex desensitized after eight but not three weeks of SSRI administration"
+    excerpt: >-
+      Terminal autoreceptors in orbitofrontal cortex desensitized after eight
+      but not three weeks in rodents, consistent with the longer SSRI delay in
+      OCD than in depression.
+
+  - evidence_id: K33-P195-RISPERIDONE-MOA
+    pdf_pages: [194]
+    section: "Risperidone and Paliperidone — Mechanism of Action"
+    evidence_type: basic_pharmacology
+    anchor_text:
+      - "Risperidone and paliperidone share similar receptor affinities"
+      - "high affinity for dopamine D2 receptors"
+      - "serotonin 5-HT2A receptors"
+    excerpt: >-
+      Risperidone has high affinity and potent antagonism at dopamine D2 and
+      serotonin 5-HT2A receptors. D2 occupancy and EPS rise with dose.
+
+  - evidence_id: K33-P282-PARTIAL-AGONISM
+    pdf_pages: [281, 282]
+    section: "Dopamine Partial Agonists"
+    evidence_type: basic_pharmacology
+    anchor_text:
+      - "lower intrinsic activity than the natural ligand"
+      - "reduced ligand, it will produce activity similar to the endogenous ligand but at a lower level"
+    excerpt: >-
+      A partial agonist has lower intrinsic activity than the endogenous ligand:
+      it can provide lower-level agonism where ligand is reduced and oppose the
+      effect of ligand where it is excessive.
+
+  - evidence_id: K33-P283-PARTIAL-AGONIST-SAFETY-RATIONALE
+    pdf_pages: [282]
+    section: "Dopamine Partial Agonists"
+    evidence_type: proposed_mechanism
+    certainty: proposed
+    anchor_text:
+      - "partial agonists are also proposed to have reduced liability for extrapyramidal symptoms (EPS) and hyperprolactinemia"
+    excerpt: >-
+      Partial agonists are proposed to have less EPS and hyperprolactinemia than
+      excessive D2 blockade in nigrostriatal and tuberoinfundibular pathways.
+
+  - evidence_id: K33-P283-ARIPIPRAZOLE-NBN
+    pdf_pages: [282]
+    section: "Aripiprazole — Neuroscience-Based Nomenclature"
+    evidence_type: structured_pharmacology
+    anchor_text:
+      - "Aripiprazole was the first approved in this class of agents"
+      - "Receptor partial agonist (D2, 5-HT1A) and antagonist (5-HT2A)"
+    excerpt: >-
+      Aripiprazole is listed as a D2 and 5-HT1A receptor partial agonist and a
+      5-HT2A antagonist in the dopamine and serotonin domains.
+
+  - evidence_id: K33-P216-QUETIAPINE-OCD
+    pdf_pages: [215]
+    section: "Quetiapine — Other Diagnoses"
+    evidence_type: small_clinical_trial
+    certainty: limited
+    anchor_text:
+      - "several small trials of quetiapine treatment of Obsessive-Compulsive Disorder (OCD)"
+      - "A small single-bl"
+    excerpt: >-
+      A small single-blind placebo-controlled study found adjunctive quetiapine
+      plus an SSRI more efficacious for OCD symptoms than placebo plus an SSRI.
+
+  - evidence_id: K33-P907-LAMOTRIGINE-OCD
+    pdf_pages: [906]
+    section: "Lamotrigine — Major Depressive and Other Disorders"
+    evidence_type: small_clinical_trial
+    certainty: limited
+    anchor_text:
+      - "Lamotrigine was also superior to adding a placebo to SSRI treatment for obsessive-compulsive disorder"
+    excerpt: >-
+      A small controlled trial found lamotrigine augmentation superior to
+      placebo augmentation of SSRI treatment for OCD.
+
+  - evidence_id: K33-P201-RISPERIDONE-METABOLIC
+    pdf_pages: [200, 201]
+    section: "Risperidone — Precautions and Adverse Reactions"
+    evidence_type: adverse_effect
+    anchor_text:
+      - "CHANGES IN WEIGHT"
+      - "CATIE study, patients on risperidone gained an average of 0.8 lb"
+    excerpt: >-
+      Risperidone is associated with weight gain, dyslipidemia, and increased
+      diabetes risk. In CATIE the average gain was 0.8 lb, while 14% gained more
+      than 7% of body weight; short trials reported 18% versus 9% on placebo.
+
+  - evidence_id: K33-P202-RISPERIDONE-EPS
+    pdf_pages: [201]
+    section: "Risperidone — Movement Side Effects and Disorders"
+    evidence_type: adverse_effect
+    anchor_text:
+      - "pendent increase in extrapyramidal side effects"
+      - "akathisia"
+    excerpt: >-
+      Risperidone has dose-dependent extrapyramidal effects, and akathisia has
+      been described.
+
+  - evidence_id: K33-P202-RISPERIDONE-PROLACTIN
+    pdf_pages: [199, 201, 203]
+    section: "Risperidone — Hyperprolactinemia"
+    evidence_type: adverse_effect
+    anchor_text:
+      - "HYPERPROLACTINEMIA"
+      - "Risperidone and paliperidone increase prolactin levels"
+      - "Meta-analysis of 15 antipsychotic"
+    excerpt: >-
+      Risperidone is more strongly associated with prolactin elevation than
+      other antipsychotics. CATIE reported a mean increase of 15.4 ng/dL, and a
+      meta-analysis placed risperidone/paliperidone highest among 15 agents.
+
+  - evidence_id: K33-P284-ARIPIPRAZOLE-SAFETY-PROFILE
+    pdf_pages: [283]
+    section: "Aripiprazole"
+    evidence_type: adverse_effect_profile
+    anchor_text:
+      - "benign side-effect profile, which includes fewer EPS and weight gain liability"
+      - "most prominent side effect is restlessness"
+      - "seldom increases prolactin levels"
+    excerpt: >-
+      Aripiprazole is described as having lower EPS and weight-gain liability;
+      restlessness is prominent, prolactin seldom rises, and it may lower
+      prolactin when added to a prolactin-raising dopamine blocker.
+
+  - evidence_id: K33-P288-ARIPIPRAZOLE-AKATHISIA
+    pdf_pages: [287]
+    section: "Aripiprazole — Effects on Specific Organs and Systems"
+    evidence_type: adverse_effect
+    anchor_text:
+      - "rates of akathisia and restlessness were higher in the aripiprazole group"
+    excerpt: >-
+      Later analyses report more akathisia than initially believed, and
+      akathisia is often the reason for acute intolerance.
+
+  - evidence_id: K33-P065-NBN-RATIONALE
+    pdf_pages: [64]
+    section: "Neuroscience-Based Nomenclature"
+    evidence_type: classification_rationale
+    anchor_text:
+      - "Naming psychotropics following the indications they had been initially used for has unfortunate consequences"
+      - "the term antidepressants blurs the pharmacologic"
+    excerpt: >-
+      Traditional indication-based labels can confuse patients and clinicians,
+      contribute to stigma, and conceal meaningful pharmacological differences
+      among medications grouped under the same historical class.
+
+  - evidence_id: K33-P077-NBN-DIMENSIONS
+    pdf_pages: [76]
+    section: "Additional Layers to NbN and Clinical Aids"
+    evidence_type: classification_framework
+    anchor_text:
+      - "the pharmacology and MoA domains represent the main pharmacologic properties"
+      - "Approved Indications dimension"
+    excerpt: >-
+      Pharmacological domain and mode of action form the main NbN identity.
+      Additional dimensions include approved indications, efficacy, side effects,
+      practical notes, pregnancy information, and neurobiology.
+
+cases:
+  - case_id: OCD-GOLD-01
+    route: clinical_options
+    question: >-
+      A patient with OCD has had only a partial response to an SRI. What
+      pharmacologic directions can be considered based on this chapter?
+    answerability: partial
+    answerability_reason: >-
+      The chapter supports adequacy checks, dose/time optimization, and several
+      augmentation directions, but it does not provide a complete ordered OCD
+      treatment algorithm or a direct comparison of all next steps.
+    critical_evidence:
+      - K33-P038-TREATMENT-FAILURE
+      - K33-P040-OCD-AUGMENTATION
+      - K33-P075-OCD-DOPAMINE-AUGMENTERS
+      - K33-P380-OCD-SSRI-EFFICACY
+    supporting_evidence:
+      - K33-P038-OCD-OUTCOMES
+      - K33-P038-TREATMENT-RESISTANCE
+      - K33-P216-QUETIAPINE-OCD
+      - K33-P907-LAMOTRIGINE-OCD
+    required_claims:
+      - claim_id: C01-01
+        critical: true
+        text: >-
+          Before changing strategy, confirm diagnosis, adherence, interactions,
+          adequate SRI dose, and adequate duration.
+        supported_by: [K33-P038-TREATMENT-FAILURE, K33-P380-OCD-SSRI-EFFICACY]
+      - claim_id: C01-02
+        critical: true
+        text: >-
+          OCD may need higher SRI doses and a longer trial than depression, so
+          optimization is a distinct next-step direction.
+        supported_by: [K33-P380-OCD-SSRI-EFFICACY]
+      - claim_id: C01-03
+        critical: true
+        text: >-
+          If there is genuine partial benefit, serotonin–dopamine augmentation
+          is a supported direction; low-dose risperidone and aripiprazole are
+          the clearest named examples, particularly with comorbid tics.
+        supported_by: [K33-P040-OCD-AUGMENTATION, K33-P075-OCD-DOPAMINE-AUGMENTERS]
+      - claim_id: C01-04
+        critical: false
+        text: >-
+          Quetiapine and lamotrigine appear in small augmentation trials, but
+          their evidence must be labeled limited rather than equivalent to the
+          stronger statement for risperidone/aripiprazole.
+        supported_by: [K33-P216-QUETIAPINE-OCD, K33-P907-LAMOTRIGINE-OCD]
+      - claim_id: C01-05
+        critical: true
+        text: >-
+          The chapter does not establish whether optimization, switching, or a
+          particular augmentation should always come next.
+        supported_by: [K33-P038-TREATMENT-RESISTANCE]
+    forbidden_claims:
+      - "Immediately add an antipsychotic without checking dose, duration, adherence, or diagnosis."
+      - "All dopamine blockers are useful in OCD."
+      - "Quetiapine or lamotrigine has evidence equivalent to risperidone/aripiprazole."
+      - "Kaplan provides a complete ranked next-step algorithm here."
+    ideal_answer_outline:
+      - "First establish that this is a true partial response after an adequate SRI trial."
+      - "Optimize dose and duration when tolerated; OCD often responds more slowly and may need higher doses."
+      - "If partial benefit remains, consider augmentation; risperidone or aripiprazole are the clearest named options."
+      - "Mention weaker signals for quetiapine or lamotrigine only with explicit evidence limits."
+      - "State that this chapter alone cannot rank all next steps for an individual patient."
+
+  - case_id: OCD-GOLD-02
+    route: condition_to_mechanism
+    question: >-
+      Which pharmacologic mechanisms are relevant when an SRI alone is
+      insufficient in OCD, and what does the evidence actually support?
+    answerability: partial
+    answerability_reason: >-
+      The chapter links SERT inhibition and selected augmentation pharmacology
+      to clinical observations. It does not prove a complete neurobiological
+      model of OCD or that a shared receptor mechanism guarantees efficacy.
+    critical_evidence:
+      - K33-P381-SERT-INHIBITION
+      - K33-P382-OCD-OFC-OCCUPANCY
+      - K33-P075-OCD-DOPAMINE-AUGMENTERS
+      - K33-P076-OCD-SRI-SPECIFICITY
+    supporting_evidence:
+      - K33-P383-OCD-DELAY
+      - K33-P195-RISPERIDONE-MOA
+      - K33-P283-ARIPIPRAZOLE-NBN
+      - K33-P907-LAMOTRIGINE-OCD
+    required_claims:
+      - claim_id: C02-01
+        critical: true
+        text: >-
+          SERT inhibition is the core mechanism supported for OCD: SSRIs inhibit
+          5-HT transporters and clinical evidence supports SRIs specifically,
+          rather than antidepressants as a broad label.
+        supported_by: [K33-P381-SERT-INHIBITION, K33-P076-OCD-SRI-SPECIFICITY]
+      - claim_id: C02-02
+        critical: true
+        text: >-
+          Greater transporter engagement and delayed orbitofrontal adaptation
+          are offered as mechanistic explanations for higher doses and slower
+          response; these explanations must retain their suggested/preclinical
+          status.
+        supported_by: [K33-P382-OCD-OFC-OCCUPANCY, K33-P383-OCD-DELAY]
+      - claim_id: C02-03
+        critical: true
+        text: >-
+          Dopamine/serotonin receptor modulation is relevant as augmentation,
+          with drug-specific clinical support for low-dose risperidone and
+          aripiprazole.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS, K33-P195-RISPERIDONE-MOA, K33-P283-ARIPIPRAZOLE-NBN]
+      - claim_id: C02-04
+        critical: true
+        text: >-
+          Clinical efficacy cannot be inferred for every drug sharing SERT or
+          D2 pharmacology; efficacy evidence is drug- and context-specific.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS, K33-P076-OCD-SRI-SPECIFICITY]
+    forbidden_claims:
+      - "OCD is proven to be caused by serotonin deficiency."
+      - "Dopamine excess is proven to cause inadequate SRI response in OCD."
+      - "Every D2 antagonist or partial agonist should work as augmentation."
+      - "Rodent autoreceptor findings are direct human clinical evidence."
+    ideal_answer_outline:
+      - "Separate established clinical support, basic pharmacology, and proposed rationale."
+      - "Describe SERT inhibition as the treatment base."
+      - "Describe D2/5-HT modulation as a drug-specific augmentation route."
+      - "Explicitly reject a simple serotonin-deficit or dopamine-excess causal claim."
+
+  - case_id: OCD-GOLD-03
+    route: mechanism_explanation
+    question: >-
+      How does D2 partial agonism differ from D2 antagonism, and why might the
+      distinction matter when considering augmentation for OCD?
+    answerability: partial
+    answerability_reason: >-
+      The receptor-level distinction and general safety implications are well
+      described. The chapter does not demonstrate that partial agonism itself
+      explains superior or different OCD augmentation efficacy.
+    critical_evidence:
+      - K33-P195-RISPERIDONE-MOA
+      - K33-P282-PARTIAL-AGONISM
+      - K33-P283-PARTIAL-AGONIST-SAFETY-RATIONALE
+      - K33-P075-OCD-DOPAMINE-AUGMENTERS
+    supporting_evidence:
+      - K33-P283-ARIPIPRAZOLE-NBN
+      - K33-P202-RISPERIDONE-PROLACTIN
+      - K33-P284-ARIPIPRAZOLE-SAFETY-PROFILE
+    required_claims:
+      - claim_id: C03-01
+        critical: true
+        text: >-
+          A D2 antagonist blocks receptor activation; risperidone is described
+          as a potent D2 antagonist, together with 5-HT2A antagonism.
+        supported_by: [K33-P195-RISPERIDONE-MOA]
+      - claim_id: C03-02
+        critical: true
+        text: >-
+          A partial agonist has lower intrinsic activity and may behave more
+          agonistically in low-ligand conditions and more antagonistically in
+          high-ligand conditions.
+        supported_by: [K33-P282-PARTIAL-AGONISM]
+      - claim_id: C03-03
+        critical: true
+        text: >-
+          Reduced EPS and hyperprolactinemia are proposed class advantages of
+          partial agonism, not guaranteed outcomes.
+        supported_by: [K33-P283-PARTIAL-AGONIST-SAFETY-RATIONALE]
+      - claim_id: C03-04
+        critical: true
+        text: >-
+          Both risperidone and aripiprazole have OCD augmentation support, but
+          this chapter does not show that the receptor distinction causes their
+          efficacy or proves one is more efficacious for OCD.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS]
+    forbidden_claims:
+      - "A partial agonist simply increases dopamine everywhere."
+      - "A partial agonist has no antagonist-like effects."
+      - "Partial agonism is proven superior to antagonism for OCD."
+      - "The schizophrenia pathway model is established OCD pathophysiology."
+      - "Partial agonists cannot cause EPS, akathisia, or prolactin effects."
+    ideal_answer_outline:
+      - "Explain receptor action first."
+      - "Connect the distinction cautiously to likely safety trade-offs."
+      - "Then state the boundary: the chapter supports both named drugs clinically but not a mechanism-based OCD efficacy ranking."
+
+  - case_id: OCD-GOLD-04
+    route: mechanism_to_drug
+    question: >-
+      Which drugs with dopamine antagonism or partial agonism have evidence in
+      this chapter as augmentation for OCD after an inadequate serotonergic
+      response?
+    answerability: answerable_with_graded_evidence
+    critical_evidence:
+      - K33-P075-OCD-DOPAMINE-AUGMENTERS
+      - K33-P195-RISPERIDONE-MOA
+      - K33-P283-ARIPIPRAZOLE-NBN
+    supporting_evidence:
+      - K33-P216-QUETIAPINE-OCD
+    required_claims:
+      - claim_id: C04-01
+        critical: true
+        text: >-
+          Risperidone is a D2/5-HT2A antagonist and is explicitly named as a
+          helpful low-dose augmentation strategy for serotonergic treatment.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS, K33-P195-RISPERIDONE-MOA]
+      - claim_id: C04-02
+        critical: true
+        text: >-
+          Aripiprazole is a D2/5-HT1A partial agonist and 5-HT2A antagonist and
+          is explicitly named as a helpful low-dose augmentation strategy.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS, K33-P283-ARIPIPRAZOLE-NBN]
+      - claim_id: C04-03
+        critical: false
+        text: >-
+          Quetiapine may be mentioned as a weaker candidate because one small
+          single-blind controlled augmentation study was positive; it must not
+          be presented at the same evidence level.
+        supported_by: [K33-P216-QUETIAPINE-OCD]
+      - claim_id: C04-04
+        critical: true
+        text: >-
+          Mechanism matching alone is insufficient: the list is constrained by
+          explicit OCD augmentation evidence in this chapter.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS]
+    forbidden_claims:
+      - "All D2 antagonists are candidates for OCD augmentation."
+      - "Clozapine is a supported candidate; the chapter instead reports possible worsening."
+      - "Brexpiprazole or cariprazine has OCD augmentation evidence merely because it is a partial agonist."
+      - "Risperidone, aripiprazole, and quetiapine have equal-strength evidence."
+    ideal_answer_outline:
+      - "Lead with risperidone and aripiprazole and state their different mechanisms."
+      - "Optionally add quetiapine in a clearly lower-evidence tier."
+      - "Explain that receptor membership did not generate the list; explicit OCD evidence did."
+
+  - case_id: OCD-GOLD-05
+    route: constrained_drug_comparison
+    question: >-
+      For OCD augmentation, how should risperidone and aripiprazole be compared
+      when minimizing prolactin elevation, weight gain, and akathisia matters?
+    answerability: partial
+    answerability_reason: >-
+      The chapter supplies general drug safety profiles and confirms both drugs
+      as OCD augmenters, but it does not provide an OCD-specific head-to-head
+      trial across these three outcomes or enough patient context to select one
+      universally.
+    critical_evidence:
+      - K33-P075-OCD-DOPAMINE-AUGMENTERS
+      - K33-P201-RISPERIDONE-METABOLIC
+      - K33-P202-RISPERIDONE-EPS
+      - K33-P202-RISPERIDONE-PROLACTIN
+      - K33-P284-ARIPIPRAZOLE-SAFETY-PROFILE
+      - K33-P288-ARIPIPRAZOLE-AKATHISIA
+    supporting_evidence:
+      - K33-P283-PARTIAL-AGONIST-SAFETY-RATIONALE
+    required_claims:
+      - claim_id: C05-01
+        critical: true
+        text: >-
+          Both drugs are explicitly supported as low-dose OCD augmentation
+          options, so the comparison concerns trade-offs rather than excluding
+          one for lack of OCD relevance.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS]
+      - claim_id: C05-02
+        critical: true
+        text: >-
+          Risperidone has a strong prolactin-elevation signal and documented
+          weight/metabolic liability; its movement effects are dose-dependent
+          and include reported akathisia.
+        supported_by: [K33-P201-RISPERIDONE-METABOLIC, K33-P202-RISPERIDONE-EPS, K33-P202-RISPERIDONE-PROLACTIN]
+      - claim_id: C05-03
+        critical: true
+        text: >-
+          Aripiprazole generally has lower prolactin and weight-gain liability,
+          but restlessness/akathisia is a prominent practical concern.
+        supported_by: [K33-P284-ARIPIPRAZOLE-SAFETY-PROFILE, K33-P288-ARIPIPRAZOLE-AKATHISIA]
+      - claim_id: C05-04
+        critical: true
+        text: >-
+          If prolactin and weight dominate, the chapter's general safety data
+          lean toward aripiprazole; if prior akathisia or severe sensitivity to
+          restlessness dominates, that advantage may be offset.
+        supported_by: [K33-P201-RISPERIDONE-METABOLIC, K33-P202-RISPERIDONE-PROLACTIN, K33-P284-ARIPIPRAZOLE-SAFETY-PROFILE, K33-P288-ARIPIPRAZOLE-AKATHISIA]
+      - claim_id: C05-05
+        critical: true
+        text: >-
+          This is not an OCD-specific head-to-head efficacy or safety conclusion;
+          patient history, dose, comorbidity, prior response, and monitoring
+          needs are required before an individual choice.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS, K33-P202-RISPERIDONE-EPS, K33-P288-ARIPIPRAZOLE-AKATHISIA]
+    forbidden_claims:
+      - "Aripiprazole has no risk of akathisia."
+      - "Risperidone never causes akathisia at low dose."
+      - "Aripiprazole is universally the best OCD augmenter."
+      - "The cited safety studies are OCD-specific head-to-head evidence."
+      - "The chapter proves equal efficacy of risperidone and aripiprazole in OCD."
+    ideal_answer_outline:
+      - "Use a three-row comparison: prolactin, weight/metabolic effects, akathisia/restlessness."
+      - "Explain the conditional trade-off rather than naming a universal winner."
+      - "Label the safety evidence as general drug evidence, not an OCD head-to-head trial."
+
+  - case_id: NBN-GOLD-01
+    route: nbn_classification_explanation
+    question: >-
+      What is the Neuroscience-based Nomenclature classification, and why is it
+      more informative than calling medications "antidepressants" or
+      "antipsychotics"?
+    answerability: answerable
+    answerability_reason: >-
+      The chapter explicitly explains the rationale for NbN, defines its core
+      identity and additional dimensions, and provides the SRI/desipramine OCD
+      example as a concrete illustration.
+    critical_evidence:
+      - K33-P065-NBN-RATIONALE
+      - K33-P076-OCD-SRI-SPECIFICITY
+      - K33-P077-NBN-DIMENSIONS
+    supporting_evidence:
+      - K33-P075-OCD-DOPAMINE-AUGMENTERS
+    required_claims:
+      - claim_id: C06-01
+        critical: true
+        text: >-
+          Traditional labels such as antidepressant and antipsychotic are based
+          largely on historical indications rather than on the medication's
+          pharmacology.
+        supported_by: [K33-P065-NBN-RATIONALE]
+      - claim_id: C06-02
+        critical: true
+        text: >-
+          The core NbN identity describes a medication by its pharmacological
+          domain and mode of action, with the relevant molecular targets included
+          where known.
+        supported_by: [K33-P077-NBN-DIMENSIONS]
+      - claim_id: C06-03
+        critical: true
+        text: >-
+          NbN keeps pharmacological identity separate from clinical dimensions
+          such as approved indications, efficacy evidence, side effects,
+          practical notes, pregnancy information, and neurobiology.
+        supported_by: [K33-P077-NBN-DIMENSIONS]
+      - claim_id: C06-04
+        critical: true
+        text: >-
+          OCD illustrates the limitation of the old terminology: treatment
+          relevance is associated specifically with serotonin reuptake inhibition,
+          not with membership in the broad antidepressant class. Desipramine is
+          cited as an effective antidepressant that is inferior for OCD.
+        supported_by: [K33-P076-OCD-SRI-SPECIFICITY]
+      - claim_id: C06-05
+        critical: true
+        text: >-
+          NbN classification describes what a drug does but does not by itself
+          prove that the drug is effective for a particular disorder.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS, K33-P077-NBN-DIMENSIONS]
+    forbidden_claims:
+      - "NbN classifies drugs primarily by the disorders they treat."
+      - "All medications historically called antidepressants have equivalent pharmacology."
+      - "All medications historically called antipsychotics are interchangeable."
+      - "A matching NbN mechanism proves clinical efficacy for OCD."
+      - "NbN is itself a treatment guideline or prescribing algorithm."
+      - "Each medication belongs to only one pharmacological domain or has only one mechanism."
+    ideal_answer_outline:
+      - "Explain the problem with indication-based historical terminology."
+      - "Define the core identity as pharmacological domain plus mode of action and target."
+      - "Describe the additional clinical dimensions separately."
+      - "Use the SRI versus antidepressant distinction in OCD as the concrete example."
+      - "State that pharmacological classification does not replace condition-specific efficacy evidence."
+
+  - case_id: NBN-GOLD-02
+    route: nbn_drug_comparison
+    question: >-
+      Risperidone and aripiprazole were both traditionally called atypical
+      antipsychotics. How does NbN distinguish them, and why can that distinction
+      matter when considering augmentation for OCD?
+    answerability: answerable_with_limitation
+    answerability_reason: >-
+      The chapter describes both NbN identities, provides OCD augmentation
+      support for both medications, and discusses general safety differences.
+      It does not prove that their mechanistic difference determines relative
+      OCD efficacy.
+    critical_evidence:
+      - K33-P075-OCD-DOPAMINE-AUGMENTERS
+      - K33-P195-RISPERIDONE-MOA
+      - K33-P283-ARIPIPRAZOLE-NBN
+      - K33-P077-NBN-DIMENSIONS
+    supporting_evidence:
+      - K33-P202-RISPERIDONE-EPS
+      - K33-P202-RISPERIDONE-PROLACTIN
+      - K33-P284-ARIPIPRAZOLE-SAFETY-PROFILE
+      - K33-P288-ARIPIPRAZOLE-AKATHISIA
+    required_claims:
+      - claim_id: C07-01
+        critical: true
+        text: >-
+          The former atypical-antipsychotic label places risperidone and
+          aripiprazole together but does not expose their different receptor
+          actions.
+        supported_by: [K33-P077-NBN-DIMENSIONS, K33-P195-RISPERIDONE-MOA, K33-P283-ARIPIPRAZOLE-NBN]
+      - claim_id: C07-02
+        critical: true
+        text: >-
+          Risperidone is classified in the dopamine and serotonin domains and
+          acts primarily as a D2 and 5-HT2A receptor antagonist.
+        supported_by: [K33-P195-RISPERIDONE-MOA]
+      - claim_id: C07-03
+        critical: true
+        text: >-
+          Aripiprazole is classified in the dopamine and serotonin domains as a
+          D2 and 5-HT1A partial agonist and a 5-HT2A antagonist.
+        supported_by: [K33-P283-ARIPIPRAZOLE-NBN]
+      - claim_id: C07-04
+        critical: true
+        text: >-
+          Both medications are explicitly described as helpful low-dose
+          augmentation strategies for serotonergic treatment in OCD, especially
+          when a tic disorder is comorbid.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS]
+      - claim_id: C07-05
+        critical: true
+        text: >-
+          Their different NbN identities help organize relevant safety
+          trade-offs: risperidone has stronger prolactin and metabolic concerns,
+          while aripiprazole generally has lower prolactin and weight liability
+          but a prominent restlessness or akathisia concern.
+        supported_by: [K33-P202-RISPERIDONE-PROLACTIN, K33-P284-ARIPIPRAZOLE-SAFETY-PROFILE, K33-P288-ARIPIPRAZOLE-AKATHISIA]
+      - claim_id: C07-06
+        critical: true
+        text: >-
+          The pharmacological distinction does not establish that one medication
+          is more efficacious than the other for OCD; relative efficacy requires
+          condition-specific comparative evidence.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS, K33-P077-NBN-DIMENSIONS]
+    forbidden_claims:
+      - "Risperidone and aripiprazole have the same mechanism because both were called atypical antipsychotics."
+      - "Aripiprazole is a pure D2 antagonist."
+      - "Risperidone is a D2 partial agonist."
+      - "Partial agonism proves that aripiprazole is more effective for OCD."
+      - "All dopamine partial agonists have evidence for OCD augmentation."
+      - "Aripiprazole has no risk of akathisia."
+      - "Risperidone and aripiprazole have been proven equally effective in an OCD head-to-head trial."
+    ideal_answer_outline:
+      - "Begin with the shared historical label and show what it hides."
+      - "Present each medication's complete NbN identity."
+      - "Add the separate OCD efficacy evidence for both."
+      - "Show how the mechanistic distinction organizes safety trade-offs."
+      - "End with the limitation that NbN identity does not establish comparative efficacy."
+
+review_checklist:
+  clinician_review:
+    - "Are all required claims clinically correct and appropriately scoped?"
+    - "Are any important OCD next-step options missing from the selected chapter?"
+    - "Are evidence tiers for risperidone, aripiprazole, quetiapine, and lamotrigine fair?"
+    - "Do the forbidden claims capture the most dangerous likely errors?"
+    - "Should any case be marked unanswerable rather than partially answerable?"
+  technical_review:
+    - "Resolve each evidence item to stable chunk IDs after naive ingest."
+    - "Preserve PDF page numbers and section titles in chunk metadata."
+    - "Allow multiple chunks to satisfy one evidence ID when a passage crosses a chunk boundary."
+    - "Do not score psychiatrist approval while needs_approval is true."
+    - "Version every later change to questions, evidence, claims, or pass criteria."

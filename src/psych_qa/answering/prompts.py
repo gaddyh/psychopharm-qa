@@ -1,8 +1,7 @@
-"""Prompt templates for the answering pipeline."""
+"""Prompt templates for the answering pipeline — claims-first V2."""
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
 SYSTEM_PROMPT = """You are a psychopharmacology expert assistant for clinicians. You answer questions about psychiatric drugs using evidence from three sources:
@@ -12,13 +11,21 @@ SYSTEM_PROMPT = """You are a psychopharmacology expert assistant for clinicians.
 3. **Kaplan** (Chapter 33, Biologic Therapies) — deeper clinical context and treatment rationale.
 
 Rules:
-- Cite evidence using the provided evidence_id values (e.g. "stahl_claim_123", "nbn_claim_456", "kaplan_chunk_789").
+- Emit your answer as a list of atomic **claims**. Each claim is one medical statement.
+- Every claim MUST cite at least one evidence_id from the evidence package.
 - NEVER invent evidence IDs. Only use IDs that appear in the evidence package.
-- If sources disagree, state the disagreement explicitly.
+- Use claim_role to indicate the role of each claim:
+  - "direct": directly answers the question
+  - "explanatory": provides context or reasoning
+  - "caveat": warns about limitations, uncertainties, or contraindications
+  - "comparison": compares alternatives
+- Do NOT generate free prose. The system will assemble the display from your claims.
+- Do NOT self-rate whether a claim is "critical" — the system determines that.
+- If sources disagree, include a claim noting the disagreement and list it in uncertainties.
 - If evidence is insufficient, set status to "abstained" or "needs_clarification".
 - Be precise about FDA approval status — "not marked as FDA approved" ≠ "not approved".
-- Keep the direct answer concise. Put detail in the explanation.
-- Every claim in your answer must have at least one evidence_id citation."""
+- If the question contains factual premises, verify them against the evidence. If a premise
+  is contradicted by the evidence, include a caveat claim noting the contradiction."""
 
 
 def build_evidence_prompt(evidence_package: dict[str, Any]) -> str:
@@ -45,12 +52,12 @@ def build_evidence_prompt(evidence_package: dict[str, Any]) -> str:
                     approval = f" [FDA approved: {attrs['fda_approved']}]"
                 parts.append(f"[{e['evidence_id']}] ({e.get('category', '')}){approval} {e['text']}")
 
-    # Kaplan passages
+    # Kaplan passages — full text, no truncation
     kaplan = evidence_package.get("kaplan_passages", [])
     if kaplan:
         parts.append("\n=== KAPLAN CHAPTER 33 PASSAGES ===")
         for e in kaplan:
-            parts.append(f"[{e['evidence_id']}] {e['text'][:500]}")
+            parts.append(f"[{e['evidence_id']}] {e['text']}")
 
     # Conflicts
     conflicts = evidence_package.get("conflicts_or_uncertainties", [])
@@ -65,14 +72,15 @@ def build_evidence_prompt(evidence_package: dict[str, Any]) -> str:
 def build_answer_prompt(question: str, evidence_text: str) -> list[dict[str, str]]:
     """Build the full message list for the answer generation LLM call."""
     user_prompt = f"""Answer this question using ONLY the evidence provided below.
-Cite evidence_ids for every claim. If evidence is insufficient, abstain.
+Emit your answer as atomic claims, each with at least one evidence_id citation.
+If evidence is insufficient, abstain.
 
 QUESTION: {question}
 
 EVIDENCE PACKAGE:
 {evidence_text}
 
-Provide your answer as JSON with: direct_answer, explanation, citations (each with text + evidence_ids), uncertainty, status, clarification_question."""
+Provide your answer as JSON with: claims (array of {{text, evidence_ids, claim_role}}), status, uncertainties (array of strings), clarification_question."""
 
     return [
         {"role": "system", "content": SYSTEM_PROMPT},

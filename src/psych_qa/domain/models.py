@@ -262,26 +262,65 @@ class EvidencePackage(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class AnswerCitation(BaseModel):
-    """A citation in a generated answer, referencing evidence IDs."""
+class AnswerClaim(BaseModel):
+    """One atomic medical claim in a generated answer.
+
+    The LLM emits text + evidence_ids + claim_role. The application
+    assigns `critical` deterministically from the cited evidence category.
+    """
 
     text: str
     evidence_ids: list[str] = Field(default_factory=list)
+    claim_role: str = "direct"  # direct / explanatory / caveat / comparison
+    critical: bool = False  # assigned by the application, never by the LLM
 
 
 class GeneratedAnswer(BaseModel):
-    """The LLM's structured output.
+    """The LLM's structured output — claims-first V2.
 
-    The LLM cites internal evidence_ids. The renderer resolves these
-    into book names + pages. The citation validator rejects nonexistent IDs.
+    The LLM emits atomic claims with evidence_ids. The application:
+    1. Assigns `critical` deterministically from evidence category
+    2. Assembles direct_answer/explanation prose from validated claims
+    3. Validates that every claim has >=1 valid evidence_id
     """
 
-    direct_answer: str
-    explanation: str
-    citations: list[AnswerCitation] = Field(default_factory=list)
-    uncertainty: str | None = None
+    claims: list[AnswerClaim] = Field(default_factory=list)
     status: AnswerStatus = AnswerStatus.ANSWERED
+    uncertainties: list[str] = Field(default_factory=list)
     clarification_question: str | None = None
+    # Assembled by the system (not the LLM) from validated claims:
+    direct_answer: str = ""
+    explanation: str = ""
+
+
+def assemble_prose(claims: list[AnswerClaim]) -> tuple[str, str]:
+    """Assemble direct_answer and explanation from validated claims.
+
+    direct_answer = claims with claim_role == "direct"
+    explanation = claims with claim_role in (explanatory, caveat, comparison)
+
+    Each claim is rendered with inline [eid] markers for traceability.
+
+    Returns:
+        (direct_answer, explanation) tuple.
+    """
+    direct_parts: list[str] = []
+    explanation_parts: list[str] = []
+
+    for claim in claims:
+        eid_markers = ", ".join(claim.evidence_ids) if claim.evidence_ids else ""
+        marker = f" [{eid_markers}]" if eid_markers else ""
+        critical_tag = " ⚠️" if claim.critical else ""
+        line = f"{claim.text}{marker}{critical_tag}"
+
+        if claim.claim_role == "direct":
+            direct_parts.append(line)
+        else:
+            explanation_parts.append(f"**{claim.claim_role.title()}:** {line}")
+
+    direct_answer = "\n\n".join(direct_parts) if direct_parts else ""
+    explanation = "\n\n".join(explanation_parts) if explanation_parts else ""
+    return direct_answer, explanation
 
 
 class AnswerTrace(BaseModel):
@@ -295,6 +334,7 @@ class AnswerTrace(BaseModel):
     answer: GeneratedAnswer
     llm_model: str
     llm_latency_ms: int | None = None
+    versions: dict[str, Any] = Field(default_factory=dict)
     created_at: str | None = None
 
 

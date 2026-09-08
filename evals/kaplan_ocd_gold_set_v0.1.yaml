@@ -12,7 +12,7 @@ gold_set:
   corpus:
     file_name: kaplan_chapter33.pdf
     chapter: 33
-    page_numbering: "PDF page numbers from the parsed source"
+    page_numbering: "0-based PDF page indices (PyMuPDF page_index)"
     scope_note: >-
       This chapter is pharmacology-first rather than a complete OCD guideline.
       Gold answers must expose when the chapter supports a statement only
@@ -21,12 +21,14 @@ gold_set:
     release_gate_eligible: false
     reason: "Seed cases require clinician review before use as release gates."
     retrieval:
-      primary_metric: evidence_recall_at_10
+      primary_metric: critical_evidence_recall_at_10
       report_metrics:
-        - evidence_recall_at_5
-        - evidence_recall_at_10
-        - evidence_recall_at_20
+        - critical_evidence_recall_at_5
         - critical_evidence_recall_at_10
+        - critical_evidence_recall_at_20
+        - all_evidence_recall_at_5
+        - all_evidence_recall_at_10
+        - all_evidence_recall_at_20
       match_unit: evidence_id
     answer:
       report_metrics:
@@ -45,187 +47,245 @@ gold_set:
 
 evidence_catalog:
   - evidence_id: K33-P038-OCD-OUTCOMES
-    pdf_pages: [37, 38]
+    pdf_pages: [36, 37]
     section: "Treatment Outcomes — Response and Remission"
     evidence_type: clinical_outcome
+    anchor_text:
+      - "full remission from OCD with SSRI treatment alone over a 3-year period is 38%"
     excerpt: >-
       OCD is more likely to have residual manifestations than major depression
       or panic disorder. With SSRI treatment alone over three years, full
       remission is reported as 38% and partial remission as approximately 65%.
 
   - evidence_id: K33-P038-TREATMENT-FAILURE
-    pdf_pages: [38]
+    pdf_pages: [37]
     section: "Treatment Failure"
     evidence_type: practical_guidance
+    anchor_text:
+      - "Treatment Failure"
+      - "initial treatment plan should anticipate the possibility that the medication may be ineffective"
     excerpt: >-
       Before declaring treatment failure, reassess diagnosis, whether symptoms
       are adverse effects, adequacy of dose and duration, interactions, and
       adherence.
 
   - evidence_id: K33-P038-TREATMENT-RESISTANCE
-    pdf_pages: [38]
+    pdf_pages: [37]
     section: "Treatment Resistance"
     evidence_type: treatment_strategy
+    anchor_text:
+      - "Treatment Resistance"
+      - "Some patients fail to respond to repeated trials"
     excerpt: >-
       Strategies after repeated failures include drug combinations, high-dose
       therapy, and unconventional drugs. Comparative evidence for any one
       strategy is limited.
 
   - evidence_id: K33-P040-OCD-AUGMENTATION
-    pdf_pages: [40]
+    pdf_pages: [39]
     section: "Combination of Drugs"
     evidence_type: treatment_strategy
+    anchor_text:
+      - "SSRIs typically produce partial improvement in patients with OCD, so the addition of a serotonin-dopamine antagonist may be helpful"
     excerpt: >-
       SSRIs typically produce partial improvement in OCD, and adding a
       serotonin–dopamine antagonist may be helpful. Adding medication after
       partial benefit is distinguished from replacing an ineffective agent.
 
   - evidence_id: K33-P075-OCD-DOPAMINE-AUGMENTERS
-    pdf_pages: [75]
+    pdf_pages: [74]
     section: "Dopamine Blockers and Other Indications"
     evidence_type: clinical_efficacy
+    anchor_text:
+      - "low doses of risperidone or aripiprazole are proven helpful augmentation strategies for serotonergic enhancers"
+      - "clozapine was reported to worsen OCD symptoms"
     excerpt: >-
       Low-dose risperidone or aripiprazole are described as helpful augmentation
       strategies for serotonergic enhancers, especially with a comorbid tic
       disorder; clozapine has been reported to worsen OCD symptoms.
 
   - evidence_id: K33-P076-OCD-SRI-SPECIFICITY
-    pdf_pages: [76]
+    pdf_pages: [75]
     section: "Monoamine Enhancers and the Treatment of Depression"
     evidence_type: comparative_pharmacology
+    anchor_text:
+      - "serotonin reuptake inhibitors (SRI)"
+      - "desipramine are inferior in treating O"
     excerpt: >-
       OCD treatment is linked specifically to serotonin reuptake inhibitors,
       not to the broad historical label antidepressants; desipramine is given
       as an antidepressant that is inferior for OCD.
 
   - evidence_id: K33-P380-OCD-SSRI-EFFICACY
-    pdf_pages: [379, 380]
+    pdf_pages: [378, 379]
     section: "Selective Serotonin Reuptake Inhibitors — Obsessive-Compulsive Disorder"
     evidence_type: clinical_efficacy
+    anchor_text:
+      - "Placebo-controlled studies have demonstrated SSRIs to be efficacious for the treatment of OCD in adults and children"
     excerpt: >-
       Placebo-controlled studies support SSRI efficacy for OCD in adults and
       children. Some cases need doses above depression maxima, and full response
       takes longer than in depressive disorders.
 
   - evidence_id: K33-P381-SERT-INHIBITION
-    pdf_pages: [381]
+    pdf_pages: [380]
     section: "Selective Serotonin Reuptake Inhibitors — Pharmacodynamics"
     evidence_type: basic_pharmacology
+    anchor_text:
+      - "hibit the action of 5-HT transporters"
+      - "raises 5-HT levels in the central nervous system"
     excerpt: >-
       SSRIs bind to and inhibit 5-HT transporters, raising 5-HT levels in the
       central nervous system and elsewhere.
 
   - evidence_id: K33-P382-OCD-OFC-OCCUPANCY
-    pdf_pages: [382]
+    pdf_pages: [381]
     section: "Selective Serotonin Reuptake Inhibitors — Pharmacodynamics"
     evidence_type: mechanistic_rationale
     certainty: suggested
+    anchor_text:
+      - "lower occupancy with a minimal effective dose of escitalopram has been reported in the orbitofrontal cortex"
     excerpt: >-
       Lower transporter occupancy at a minimal escitalopram dose was reported
       in orbitofrontal cortex. The authors offer this as an explanation for why
       OCD commonly requires higher SSRI doses than depression.
 
   - evidence_id: K33-P383-OCD-DELAY
-    pdf_pages: [383]
+    pdf_pages: [382]
     section: "Basis for the Delayed Onset of Therapeutic Effects of SSRIs"
     evidence_type: preclinical_mechanistic_rationale
     certainty: suggested
+    anchor_text:
+      - "terminal autoreceptors in the orbitofrontal cortex desensitized after eight but not three weeks of SSRI administration"
     excerpt: >-
       Terminal autoreceptors in orbitofrontal cortex desensitized after eight
       but not three weeks in rodents, consistent with the longer SSRI delay in
       OCD than in depression.
 
   - evidence_id: K33-P195-RISPERIDONE-MOA
-    pdf_pages: [195]
+    pdf_pages: [194]
     section: "Risperidone and Paliperidone — Mechanism of Action"
     evidence_type: basic_pharmacology
+    anchor_text:
+      - "Risperidone and paliperidone share similar receptor affinities"
+      - "high affinity for dopamine D2 receptors"
+      - "serotonin 5-HT2A receptors"
     excerpt: >-
       Risperidone has high affinity and potent antagonism at dopamine D2 and
       serotonin 5-HT2A receptors. D2 occupancy and EPS rise with dose.
 
   - evidence_id: K33-P282-PARTIAL-AGONISM
-    pdf_pages: [282, 283]
+    pdf_pages: [281, 282]
     section: "Dopamine Partial Agonists"
     evidence_type: basic_pharmacology
+    anchor_text:
+      - "lower intrinsic activity than the natural ligand"
+      - "reduced ligand, it will produce activity similar to the endogenous ligand but at a lower level"
     excerpt: >-
       A partial agonist has lower intrinsic activity than the endogenous ligand:
       it can provide lower-level agonism where ligand is reduced and oppose the
       effect of ligand where it is excessive.
 
   - evidence_id: K33-P283-PARTIAL-AGONIST-SAFETY-RATIONALE
-    pdf_pages: [283]
+    pdf_pages: [282]
     section: "Dopamine Partial Agonists"
     evidence_type: proposed_mechanism
     certainty: proposed
+    anchor_text:
+      - "partial agonists are also proposed to have reduced liability for extrapyramidal symptoms (EPS) and hyperprolactinemia"
     excerpt: >-
       Partial agonists are proposed to have less EPS and hyperprolactinemia than
       excessive D2 blockade in nigrostriatal and tuberoinfundibular pathways.
 
   - evidence_id: K33-P283-ARIPIPRAZOLE-NBN
-    pdf_pages: [283]
+    pdf_pages: [282]
     section: "Aripiprazole — Neuroscience-Based Nomenclature"
     evidence_type: structured_pharmacology
+    anchor_text:
+      - "Aripiprazole was the first approved in this class of agents"
+      - "Receptor partial agonist (D2, 5-HT1A) and antagonist (5-HT2A)"
     excerpt: >-
       Aripiprazole is listed as a D2 and 5-HT1A receptor partial agonist and a
       5-HT2A antagonist in the dopamine and serotonin domains.
 
   - evidence_id: K33-P216-QUETIAPINE-OCD
-    pdf_pages: [216]
+    pdf_pages: [215]
     section: "Quetiapine — Other Diagnoses"
     evidence_type: small_clinical_trial
     certainty: limited
+    anchor_text:
+      - "several small trials of quetiapine treatment of Obsessive-Compulsive Disorder (OCD)"
+      - "A small single-bl"
     excerpt: >-
       A small single-blind placebo-controlled study found adjunctive quetiapine
       plus an SSRI more efficacious for OCD symptoms than placebo plus an SSRI.
 
   - evidence_id: K33-P907-LAMOTRIGINE-OCD
-    pdf_pages: [907]
+    pdf_pages: [906]
     section: "Lamotrigine — Major Depressive and Other Disorders"
     evidence_type: small_clinical_trial
     certainty: limited
+    anchor_text:
+      - "Lamotrigine was also superior to adding a placebo to SSRI treatment for obsessive-compulsive disorder"
     excerpt: >-
       A small controlled trial found lamotrigine augmentation superior to
       placebo augmentation of SSRI treatment for OCD.
 
   - evidence_id: K33-P201-RISPERIDONE-METABOLIC
-    pdf_pages: [201, 202]
+    pdf_pages: [200, 201]
     section: "Risperidone — Precautions and Adverse Reactions"
     evidence_type: adverse_effect
+    anchor_text:
+      - "CHANGES IN WEIGHT"
+      - "CATIE study, patients on risperidone gained an average of 0.8 lb"
     excerpt: >-
       Risperidone is associated with weight gain, dyslipidemia, and increased
       diabetes risk. In CATIE the average gain was 0.8 lb, while 14% gained more
       than 7% of body weight; short trials reported 18% versus 9% on placebo.
 
   - evidence_id: K33-P202-RISPERIDONE-EPS
-    pdf_pages: [202]
+    pdf_pages: [201]
     section: "Risperidone — Movement Side Effects and Disorders"
     evidence_type: adverse_effect
+    anchor_text:
+      - "pendent increase in extrapyramidal side effects"
+      - "akathisia"
     excerpt: >-
       Risperidone has dose-dependent extrapyramidal effects, and akathisia has
       been described.
 
   - evidence_id: K33-P202-RISPERIDONE-PROLACTIN
-    pdf_pages: [200, 202, 204]
+    pdf_pages: [199, 201, 203]
     section: "Risperidone — Hyperprolactinemia"
     evidence_type: adverse_effect
+    anchor_text:
+      - "HYPERPROLACTINEMIA"
+      - "Risperidone and paliperidone increase prolactin levels"
+      - "Meta-analysis of 15 antipsychotic"
     excerpt: >-
       Risperidone is more strongly associated with prolactin elevation than
       other antipsychotics. CATIE reported a mean increase of 15.4 ng/dL, and a
       meta-analysis placed risperidone/paliperidone highest among 15 agents.
 
   - evidence_id: K33-P284-ARIPIPRAZOLE-SAFETY-PROFILE
-    pdf_pages: [284]
+    pdf_pages: [283]
     section: "Aripiprazole"
     evidence_type: adverse_effect_profile
+    anchor_text:
+      - "benign side-effect profile, which includes fewer EPS and weight gain liability"
+      - "most prominent side effect is restlessness"
+      - "seldom increases prolactin levels"
     excerpt: >-
       Aripiprazole is described as having lower EPS and weight-gain liability;
       restlessness is prominent, prolactin seldom rises, and it may lower
       prolactin when added to a prolactin-raising dopamine blocker.
 
   - evidence_id: K33-P288-ARIPIPRAZOLE-AKATHISIA
-    pdf_pages: [288]
+    pdf_pages: [287]
     section: "Aripiprazole — Effects on Specific Organs and Systems"
     evidence_type: adverse_effect
+    anchor_text:
+      - "rates of akathisia and restlessness were higher in the aripiprazole group"
     excerpt: >-
       Later analyses report more akathisia than initially believed, and
       akathisia is often the reason for acute intolerance.

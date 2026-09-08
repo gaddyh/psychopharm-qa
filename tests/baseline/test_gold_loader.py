@@ -175,8 +175,8 @@ class TestRealGoldSet:
             pytest.skip("Gold set file not found")
         gs = load_gold_set(path)
         assert gs.meta.id == "kaplan_ch33_ocd_gold_v0.1"
-        assert len(gs.cases) == 5
-        assert len(gs.evidence_catalog) == 21
+        assert len(gs.cases) == 7
+        assert len(gs.evidence_catalog) == 23
         # All evidence items have anchor_text
         for item in gs.evidence_catalog:
             assert len(item.anchor_text) > 0, f"{item.evidence_id} has no anchor_text"

@@ -13,6 +13,7 @@ Normalization:
   - collapse whitespace
   - fix hyphenated line breaks (word-\\n → word)
   - remove non-printable PDF artifacts
+  - strip quote characters (straight and curly — PDF formatting, not semantic)
 """
 
 from __future__ import annotations
@@ -23,6 +24,9 @@ from typing import Any
 
 from .gold_loader import EvidenceItem, GoldSet
 
+# Quote characters to strip during normalization (PDF formatting artifacts)
+_QUOTE_CHARS = set('"\'\u201c\u201d\u2018\u2019\u00ab\u00bb')
+
 
 def normalize_text(text: str) -> str:
     """Normalize text for anchor matching.
@@ -31,6 +35,7 @@ def normalize_text(text: str) -> str:
     - collapse whitespace
     - fix hyphenated line breaks (e.g. "seroto-\\nnin" → "serotonin")
     - remove non-printable PDF artifacts
+    - strip quote characters (straight and curly)
     - normalize unicode to NFC
     """
     # Normalize unicode
@@ -41,6 +46,9 @@ def normalize_text(text: str) -> str:
 
     # Remove non-printable characters except whitespace
     text = "".join(c for c in text if c.isprintable() or c.isspace())
+
+    # Strip quote characters (PDF formatting, not semantic content)
+    text = "".join(c for c in text if c not in _QUOTE_CHARS)
 
     # Lowercase
     text = text.lower()

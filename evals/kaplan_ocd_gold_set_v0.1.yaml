@@ -290,6 +290,30 @@ evidence_catalog:
       Later analyses report more akathisia than initially believed, and
       akathisia is often the reason for acute intolerance.
 
+  - evidence_id: K33-P065-NBN-RATIONALE
+    pdf_pages: [64]
+    section: "Neuroscience-Based Nomenclature"
+    evidence_type: classification_rationale
+    anchor_text:
+      - "Naming psychotropics following the indications they had been initially used for has unfortunate consequences"
+      - "the term antidepressants blurs the pharmacologic"
+    excerpt: >-
+      Traditional indication-based labels can confuse patients and clinicians,
+      contribute to stigma, and conceal meaningful pharmacological differences
+      among medications grouped under the same historical class.
+
+  - evidence_id: K33-P077-NBN-DIMENSIONS
+    pdf_pages: [76]
+    section: "Additional Layers to NbN and Clinical Aids"
+    evidence_type: classification_framework
+    anchor_text:
+      - "the pharmacology and MoA domains represent the main pharmacologic properties"
+      - "Approved Indications dimension"
+    excerpt: >-
+      Pharmacological domain and mode of action form the main NbN identity.
+      Additional dimensions include approved indications, efficacy, side effects,
+      practical notes, pregnancy information, and neurobiology.
+
 cases:
   - case_id: OCD-GOLD-01
     route: clinical_options
@@ -587,6 +611,152 @@ cases:
       - "Use a three-row comparison: prolactin, weight/metabolic effects, akathisia/restlessness."
       - "Explain the conditional trade-off rather than naming a universal winner."
       - "Label the safety evidence as general drug evidence, not an OCD head-to-head trial."
+
+  - case_id: NBN-GOLD-01
+    route: nbn_classification_explanation
+    question: >-
+      What is the Neuroscience-based Nomenclature classification, and why is it
+      more informative than calling medications "antidepressants" or
+      "antipsychotics"?
+    answerability: answerable
+    answerability_reason: >-
+      The chapter explicitly explains the rationale for NbN, defines its core
+      identity and additional dimensions, and provides the SRI/desipramine OCD
+      example as a concrete illustration.
+    critical_evidence:
+      - K33-P065-NBN-RATIONALE
+      - K33-P076-OCD-SRI-SPECIFICITY
+      - K33-P077-NBN-DIMENSIONS
+    supporting_evidence:
+      - K33-P075-OCD-DOPAMINE-AUGMENTERS
+    required_claims:
+      - claim_id: C06-01
+        critical: true
+        text: >-
+          Traditional labels such as antidepressant and antipsychotic are based
+          largely on historical indications rather than on the medication's
+          pharmacology.
+        supported_by: [K33-P065-NBN-RATIONALE]
+      - claim_id: C06-02
+        critical: true
+        text: >-
+          The core NbN identity describes a medication by its pharmacological
+          domain and mode of action, with the relevant molecular targets included
+          where known.
+        supported_by: [K33-P077-NBN-DIMENSIONS]
+      - claim_id: C06-03
+        critical: true
+        text: >-
+          NbN keeps pharmacological identity separate from clinical dimensions
+          such as approved indications, efficacy evidence, side effects,
+          practical notes, pregnancy information, and neurobiology.
+        supported_by: [K33-P077-NBN-DIMENSIONS]
+      - claim_id: C06-04
+        critical: true
+        text: >-
+          OCD illustrates the limitation of the old terminology: treatment
+          relevance is associated specifically with serotonin reuptake inhibition,
+          not with membership in the broad antidepressant class. Desipramine is
+          cited as an effective antidepressant that is inferior for OCD.
+        supported_by: [K33-P076-OCD-SRI-SPECIFICITY]
+      - claim_id: C06-05
+        critical: true
+        text: >-
+          NbN classification describes what a drug does but does not by itself
+          prove that the drug is effective for a particular disorder.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS, K33-P077-NBN-DIMENSIONS]
+    forbidden_claims:
+      - "NbN classifies drugs primarily by the disorders they treat."
+      - "All medications historically called antidepressants have equivalent pharmacology."
+      - "All medications historically called antipsychotics are interchangeable."
+      - "A matching NbN mechanism proves clinical efficacy for OCD."
+      - "NbN is itself a treatment guideline or prescribing algorithm."
+      - "Each medication belongs to only one pharmacological domain or has only one mechanism."
+    ideal_answer_outline:
+      - "Explain the problem with indication-based historical terminology."
+      - "Define the core identity as pharmacological domain plus mode of action and target."
+      - "Describe the additional clinical dimensions separately."
+      - "Use the SRI versus antidepressant distinction in OCD as the concrete example."
+      - "State that pharmacological classification does not replace condition-specific efficacy evidence."
+
+  - case_id: NBN-GOLD-02
+    route: nbn_drug_comparison
+    question: >-
+      Risperidone and aripiprazole were both traditionally called atypical
+      antipsychotics. How does NbN distinguish them, and why can that distinction
+      matter when considering augmentation for OCD?
+    answerability: answerable_with_limitation
+    answerability_reason: >-
+      The chapter describes both NbN identities, provides OCD augmentation
+      support for both medications, and discusses general safety differences.
+      It does not prove that their mechanistic difference determines relative
+      OCD efficacy.
+    critical_evidence:
+      - K33-P075-OCD-DOPAMINE-AUGMENTERS
+      - K33-P195-RISPERIDONE-MOA
+      - K33-P283-ARIPIPRAZOLE-NBN
+      - K33-P077-NBN-DIMENSIONS
+    supporting_evidence:
+      - K33-P202-RISPERIDONE-EPS
+      - K33-P202-RISPERIDONE-PROLACTIN
+      - K33-P284-ARIPIPRAZOLE-SAFETY-PROFILE
+      - K33-P288-ARIPIPRAZOLE-AKATHISIA
+    required_claims:
+      - claim_id: C07-01
+        critical: true
+        text: >-
+          The former atypical-antipsychotic label places risperidone and
+          aripiprazole together but does not expose their different receptor
+          actions.
+        supported_by: [K33-P077-NBN-DIMENSIONS, K33-P195-RISPERIDONE-MOA, K33-P283-ARIPIPRAZOLE-NBN]
+      - claim_id: C07-02
+        critical: true
+        text: >-
+          Risperidone is classified in the dopamine and serotonin domains and
+          acts primarily as a D2 and 5-HT2A receptor antagonist.
+        supported_by: [K33-P195-RISPERIDONE-MOA]
+      - claim_id: C07-03
+        critical: true
+        text: >-
+          Aripiprazole is classified in the dopamine and serotonin domains as a
+          D2 and 5-HT1A partial agonist and a 5-HT2A antagonist.
+        supported_by: [K33-P283-ARIPIPRAZOLE-NBN]
+      - claim_id: C07-04
+        critical: true
+        text: >-
+          Both medications are explicitly described as helpful low-dose
+          augmentation strategies for serotonergic treatment in OCD, especially
+          when a tic disorder is comorbid.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS]
+      - claim_id: C07-05
+        critical: true
+        text: >-
+          Their different NbN identities help organize relevant safety
+          trade-offs: risperidone has stronger prolactin and metabolic concerns,
+          while aripiprazole generally has lower prolactin and weight liability
+          but a prominent restlessness or akathisia concern.
+        supported_by: [K33-P202-RISPERIDONE-PROLACTIN, K33-P284-ARIPIPRAZOLE-SAFETY-PROFILE, K33-P288-ARIPIPRAZOLE-AKATHISIA]
+      - claim_id: C07-06
+        critical: true
+        text: >-
+          The pharmacological distinction does not establish that one medication
+          is more efficacious than the other for OCD; relative efficacy requires
+          condition-specific comparative evidence.
+        supported_by: [K33-P075-OCD-DOPAMINE-AUGMENTERS, K33-P077-NBN-DIMENSIONS]
+    forbidden_claims:
+      - "Risperidone and aripiprazole have the same mechanism because both were called atypical antipsychotics."
+      - "Aripiprazole is a pure D2 antagonist."
+      - "Risperidone is a D2 partial agonist."
+      - "Partial agonism proves that aripiprazole is more effective for OCD."
+      - "All dopamine partial agonists have evidence for OCD augmentation."
+      - "Aripiprazole has no risk of akathisia."
+      - "Risperidone and aripiprazole have been proven equally effective in an OCD head-to-head trial."
+    ideal_answer_outline:
+      - "Begin with the shared historical label and show what it hides."
+      - "Present each medication's complete NbN identity."
+      - "Add the separate OCD efficacy evidence for both."
+      - "Show how the mechanistic distinction organizes safety trade-offs."
+      - "End with the limitation that NbN identity does not establish comparative efficacy."
 
 review_checklist:
   clinician_review:

@@ -90,11 +90,15 @@ def _translate_book_pages(chunks: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 class ComplexRetriever:
-    """Hybrid retriever: vector + FTS + RRF, no drug filtering."""
+    """Hybrid retriever: vector + FTS + RRF, no drug filtering.
+
+    Filters to source_document_id=5 (original section-aware Kaplan chunks)
+    to avoid contamination from baseline chunks (source_document_id=7).
+    """
 
     def __init__(self, top_k: int = 20):
         self.top_k = top_k
-        self.retriever = KaplanRetriever(top_k=top_k)
+        self.retriever = KaplanRetriever(top_k=top_k, source_document_id=5)
 
     def retrieve(self, query: str) -> list[dict[str, Any]]:
         results = self.retriever.retrieve(query, drug_ids=None)
@@ -102,11 +106,15 @@ class ComplexRetriever:
 
 
 class ComplexRerankedRetriever:
-    """Hybrid retriever + LLM rerank, no drug filtering."""
+    """Hybrid retriever + LLM rerank, no drug filtering.
+
+    Filters to source_document_id=5 (original section-aware Kaplan chunks)
+    to avoid contamination from baseline chunks (source_document_id=7).
+    """
 
     def __init__(self, top_k: int = 20):
         self.top_k = top_k
-        self.retriever = KaplanRetriever(top_k=top_k)
+        self.retriever = KaplanRetriever(top_k=top_k, source_document_id=5)
 
     def retrieve(self, query: str) -> list[dict[str, Any]]:
         results = self.retriever.retrieve(query, drug_ids=None)

@@ -10,7 +10,8 @@ from ..db.connection import get_session
 from ..llm.client import get_llm_client
 
 
-def vector_search(query_embedding: list[float], limit: int = 10, drug_id: int | None = None) -> list[dict[str, Any]]:
+def vector_search(query_embedding: list[float], limit: int = 10, drug_id: int | None = None,
+                   source_document_id: int | None = None) -> list[dict[str, Any]]:
     """Vector similarity search using pgvector."""
     session = get_session()
     try:
@@ -33,6 +34,9 @@ def vector_search(query_embedding: list[float], limit: int = 10, drug_id: int | 
         if drug_id:
             query_str += " AND dc.entity_metadata->'drug_ids' @> CAST(:did AS jsonb)"
             params["did"] = f'[{drug_id}]'
+        if source_document_id:
+            query_str += " AND dc.source_document_id = :sdid"
+            params["sdid"] = source_document_id
         query_str += " ORDER BY de.embedding <=> q.qv LIMIT :limit"
         params["limit"] = limit
 
@@ -54,7 +58,8 @@ def vector_search(query_embedding: list[float], limit: int = 10, drug_id: int | 
         session.close()
 
 
-def fulltext_search(query: str, limit: int = 10, drug_id: int | None = None) -> list[dict[str, Any]]:
+def fulltext_search(query: str, limit: int = 10, drug_id: int | None = None,
+                    source_document_id: int | None = None) -> list[dict[str, Any]]:
     """PostgreSQL full-text search using tsvector."""
     session = get_session()
     try:
@@ -71,6 +76,9 @@ def fulltext_search(query: str, limit: int = 10, drug_id: int | None = None) -> 
         if drug_id:
             query_str += " AND dc.entity_metadata->'drug_ids' @> CAST(:did AS jsonb)"
             params["did"] = f'[{drug_id}]'
+        if source_document_id:
+            query_str += " AND dc.source_document_id = :sdid"
+            params["sdid"] = source_document_id
         query_str += " ORDER BY score DESC LIMIT :limit"
         params["limit"] = limit
 

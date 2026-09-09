@@ -44,8 +44,9 @@ def reciprocal_rank_fusion(
 class KaplanRetriever:
     """Hybrid retrieval interface for Kaplan Chapter 33."""
 
-    def __init__(self, top_k: int = 10):
+    def __init__(self, top_k: int = 10, source_document_id: int | None = None):
         self.top_k = top_k
+        self.source_document_id = source_document_id
 
     def retrieve(
         self,
@@ -66,10 +67,16 @@ class KaplanRetriever:
         # Vector search
         query_embedding = client.embed_one(query)
         drug_id = drug_ids[0] if drug_ids else None
-        vector_results = chunk_repo.vector_search(query_embedding, limit=self.top_k, drug_id=drug_id)
+        vector_results = chunk_repo.vector_search(
+            query_embedding, limit=self.top_k, drug_id=drug_id,
+            source_document_id=self.source_document_id,
+        )
 
         # Full-text search
-        fts_results = chunk_repo.fulltext_search(query, limit=self.top_k, drug_id=drug_id)
+        fts_results = chunk_repo.fulltext_search(
+            query, limit=self.top_k, drug_id=drug_id,
+            source_document_id=self.source_document_id,
+        )
 
         # Fuse with RRF
         fused = reciprocal_rank_fusion(vector_results, fts_results)
